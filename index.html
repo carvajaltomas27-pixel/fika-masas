@@ -65,6 +65,9 @@
   .day-section{margin-top:14px}
   .day-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px}
   .day-top .sectlabel{margin:0}
+  .hydwrap{font-family:var(--mono);font-size:11px;color:var(--teal);white-space:nowrap}
+  .hydin{width:40px;font-family:var(--mono);font-size:11px;color:var(--teal);background:var(--surface2);border:1px solid var(--line);border-radius:6px;padding:2px 4px;text-align:right;outline:none}
+  .hydin:focus{border-color:var(--teal);background:var(--surface)}
   .dayhead{display:grid;grid-template-columns:1fr 88px 92px 24px;gap:8px;font-family:var(--mono);font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;padding:0 2px}
   .dayhead span:nth-child(n+2){text-align:right}
   .dayrow{display:grid;grid-template-columns:1fr 88px 92px 24px;gap:8px;align-items:center;margin-bottom:8px}
@@ -336,7 +339,7 @@
         '<div class="head-right"><span class="masa-sum" id="vsub-'+r.key+'">0 g</span></div></div>'+
       (r.dayOpen ?
         '<div class="day-section">'+
-          '<div class="day-top"><span class="sectlabel">A producir hoy</span><span class="hyd" id="hyd-'+r.key+'"></span></div>'+
+          '<div class="day-top"><span class="sectlabel">A producir hoy</span><span class="hydwrap" id="hydwrap-'+r.key+'" style="display:none">hidratación <input class="hydin" type="number" min="0" step="1" data-r="'+r.key+'" data-f="hyd" id="hyd-'+r.key+'"> %</span></div>'+
           '<div class="dayhead"><span>Variedad</span><span>Cantidad</span><span>Masa</span><span></span></div>'+
           dayBody+
           '<div class="weigh" id="weigh-'+r.key+'"></div>'+
@@ -368,7 +371,9 @@
       var sub=$("vsub-"+r.key); if(sub) sub.textContent=g(D);
       var flour=0,water=0, all=(r.pre?r.pre.ings:[]).concat(r.ings);
       all.forEach(function(x){ if(/^\s*harina/i.test(x.name)) flour+=x.grams||0; if(/agua/i.test(x.name)) water+=x.grams||0; });
-      var he=$("hyd-"+r.key); if(he) he.textContent=(flour>0&&water>0)?("hidratación "+Math.round(water/flour*100)+"%"):"";
+      var he=$("hyd-"+r.key), hw=$("hydwrap-"+r.key);
+      if(flour>0&&water>0){ if(hw) hw.style.display=""; if(he && document.activeElement!==he) he.value=Math.round(water/flour*100); }
+      else if(hw){ hw.style.display="none"; }
       grand+=D; r._D=D; r._seeds=r.vars.reduce(function(a,v){return a+((v.q||0)*(v.s||0))},0);
       var factor=(D>0&&refTotal>0)?(D/refTotal):null;
       r._pre=(factor&&r.pre)?r.pre.ings.map(function(x){return {name:x.name,v:x.grams*factor}}):null;
@@ -413,6 +418,14 @@
     var t=e.target; if(t.tagName!=="INPUT") return;
     var r=find(t.dataset.r); if(!r) return; var f=t.dataset.f;
     if(f==="prelabel"){ if(r.pre) r.pre.label=t.value; recompute(); return; }
+    if(f==="hyd"){
+      var hyd=parseFloat(t.value); if(isNaN(hyd)) return; if(hyd<0) hyd=0;
+      var flourT=0, allI=(r.pre?r.pre.ings:[]).concat(r.ings);
+      allI.forEach(function(x){ if(/^\s*harina/i.test(x.name)) flourT+=x.grams||0; });
+      var aguas=[]; r.ings.forEach(function(x){ if(/agua/i.test(x.name)) aguas.push(x); }); if(r.pre) r.pre.ings.forEach(function(x){ if(/agua/i.test(x.name)) aguas.push(x); });
+      if(aguas.length && flourT>0){ var fixed=0; for(var ai=1;ai<aguas.length;ai++) fixed+=aguas[ai].grams||0; var w=Math.round(flourT*hyd/100-fixed); if(w<0) w=0; aguas[0].grams=w; }
+      recompute(); return;
+    }
     if(t.dataset.ing!==undefined){
       var arr = (t.dataset.sec==="pre" && r.pre)? r.pre.ings : r.ings;
       arr[+t.dataset.ing][f] = (f==="grams")?(parseFloat(t.value)||0):t.value;
@@ -472,6 +485,7 @@
   $("resetBtn").addEventListener("click",function(){
     if(!confirm("¿Restaurar valores de fábrica?\n\nSe van a borrar TODAS tus masas, variedades y cantidades guardadas en este navegador. Si querés conservarlas, primero usá \"Exportar datos\".")) return;
     if(!confirm("Última confirmación: esta acción NO se puede deshacer.\n\n¿Borrar todo y volver a los valores de fábrica?")) return;
+    ready=false; clearTimeout(saveT); // evitar que el guardado-al-cerrar reescriba lo borrado al recargar
     if(storageOK){try{localStorage.removeItem(KEY);}catch(e){}}
     location.reload();
   });
