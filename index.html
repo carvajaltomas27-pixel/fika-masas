@@ -247,17 +247,17 @@
   var recipes = [
     {key:"semi", label:"Semi-integral", open:false, pre:null,
       ings:[{name:"Masa madre",grams:109},{name:"Harina 000",grams:256},{name:"Harina integral",grams:256},{name:"Agua",grams:374},{name:"Sal",grams:10}],
-      vars:[{name:"Hogaza de Campo",w:840,q:20,s:0},{name:"Pan semillas",w:800,q:0,s:21},{name:"Tostada semi-integral",w:2000,q:0,s:0},{name:"Barra de semillas",w:1800,q:0,s:105}]},
+      vars:[{name:"Hogaza de Campo",w:840,q:0,s:0},{name:"Pan semillas",w:800,q:0,s:21},{name:"Tostada semi-integral",w:2000,q:0,s:0},{name:"Barra de semillas",w:1800,q:0,s:105}]},
     {key:"integral", label:"100% integral", open:false, pre:null,
       ings:[{name:"Masa madre",grams:100},{name:"Harina integral",grams:503},{name:"Agua",grams:387},{name:"Sal",grams:10}],
-      vars:[{name:"Hogaza Común",w:840,q:10,s:0}]},
+      vars:[{name:"Hogaza Común",w:840,q:0,s:0}]},
     {key:"blanco", label:"Blanco", open:false, pre:null,
       ings:[{name:"Masa madre",grams:107},{name:"Harina 000",grams:535},{name:"Agua",grams:348},{name:"Sal",grams:11}],
-      vars:[{name:"Tostada Blanca",w:2000,q:15,s:0},{name:"Avocado",w:3000,q:0,s:0}]},
+      vars:[{name:"Tostada Blanca",w:2000,q:0,s:0},{name:"Avocado",w:3000,q:0,s:0}]},
     {key:"brioche", label:"Brioche", open:false,
       pre:{label:"Poolish", ings:[{name:"Harina 000",grams:200},{name:"Leche",grams:200},{name:"Levadura seca",grams:2}]},
       ings:[{name:"Harina 000",grams:800},{name:"Huevos",grams:200},{name:"Leche",grams:200},{name:"Azúcar",grams:120},{name:"Sal",grams:20},{name:"Levadura seca",grams:8},{name:"Manteca",grams:150}],
-      vars:[{name:"Brioche de Molde",w:1200,q:6,s:0},{name:"Sándwich pollo",w:150,q:0,s:0}]}
+      vars:[{name:"Brioche de Molde",w:1200,q:0,s:0},{name:"Sándwich pollo",w:150,q:0,s:0}]}
   ];
 
   var $=function(id){return document.getElementById(id)};
@@ -449,6 +449,10 @@
   });
   ["ambient","ddt","ff"].forEach(function(id){$(id).addEventListener("input",waterCalc);});
   $("seedHyd").addEventListener("input",recompute);
+  // Guardado a prueba de balas: grabar al ocultar/cerrar la pestaña (clave en celular)
+  function flushSave(){ if(ready&&storageOK){ clearTimeout(saveT); persist(); } }
+  document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="hidden") flushSave(); });
+  window.addEventListener("pagehide",flushSave);
 
   // exportar / importar / restaurar
   function showIO(text, msg){ $("ioText").value=text||""; $("ioMsg").textContent=msg||""; $("ioPanel").style.display="block"; }
