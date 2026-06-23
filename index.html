@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>fika · Producción de masas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f2ece1; --surface:#ffffff; --surface2:#f7f2e9; --line:#e6ddcd;
+    --text:#2a2722; --muted:#938a7b; --teal:#1f6e79; --teal-deep:#15575f;
+    --cream:#e9f1ec; --wood:#b0885a; --good:#3f8f6f; --danger:#b0503e;
+    --sans:"Quicksand",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.5;padding:28px 20px 60px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:920px;margin:0 auto}
+  .brand{display:flex;align-items:center;gap:16px;margin-bottom:22px}
+  .logo{background:var(--teal);border-radius:20px;padding:13px 20px 12px;line-height:1;display:inline-flex;flex-direction:column;gap:4px}
+  .logo .sup{font-size:8px;letter-spacing:.2em;color:var(--cream);opacity:.85;font-weight:600;align-self:flex-end}
+  .logo .word{font-size:34px;font-weight:700;color:var(--cream);letter-spacing:-.01em}
+  .brand-text .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--teal);margin-bottom:4px}
+  .brand-text h1{font-size:23px;font-weight:600;letter-spacing:-.01em;color:var(--text)}
+  .intro{color:var(--muted);font-size:14px;margin-bottom:18px;max-width:600px}
+  .savebar{font-size:12px;color:var(--muted);margin:-4px 0 20px;font-family:var(--mono)}
+  .savebar #saveState{transition:color .2s}
+  .grid.planner{display:grid;grid-template-columns:1.25fr 1fr;gap:20px;align-items:start}
+  @media(max-width:760px){.grid.planner{grid-template-columns:1fr}}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 1px 3px rgba(42,39,34,.04);margin-bottom:20px}
+  .card:last-child{margin-bottom:0}
+  .card h2{font-size:12px;font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:16px;font-weight:500}
+  .note{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.5}.note b{color:var(--teal);font-weight:600}
+  label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+
+  .masa-block{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 1px 3px rgba(42,39,34,.04)}
+  .masa-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:0;cursor:pointer;user-select:none;-webkit-user-select:none}
+  .masa-name-input{font-family:var(--sans);font-size:16px;font-weight:600;color:var(--text);background:none;border:none;border-bottom:1px solid transparent;outline:none;padding:2px 0;width:100%;max-width:260px}
+  .masa-name-input:focus{border-bottom-color:var(--line)}
+  .head-right{display:flex;align-items:center;gap:8px;white-space:nowrap}
+  .head-right .hyd{font-family:var(--mono);font-size:11px;color:var(--teal)}
+  .iconbtn{background:none;border:1px solid var(--line);color:var(--muted);width:30px;height:30px;border-radius:9px;cursor:pointer;font-size:14px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .iconbtn:hover{border-color:var(--teal);color:var(--teal)}
+  .iconbtn.on{background:var(--teal);border-color:var(--teal);color:var(--cream)}
+  .sectlabel{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+  .vhead{display:grid;grid-template-columns:minmax(0,1fr) 64px 70px 60px 92px 22px;gap:7px;font-family:var(--mono);font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;padding:0 2px}
+  .vhead span:nth-child(n+2){text-align:right}
+  .vrow{display:grid;grid-template-columns:minmax(0,1fr) 64px 70px 60px 92px 22px;gap:7px;align-items:center;margin-bottom:7px}
+  .vrow input{background:var(--surface2);border:1px solid var(--line);color:var(--text);padding:7px 8px;border-radius:8px;font-size:13px;font-family:var(--sans);outline:none;width:100%;min-width:0}
+  .vrow input[type=number]{padding:7px 5px}
+  .vrow input[type=number]{font-family:var(--mono);text-align:right}
+  .vrow input:focus{border-color:var(--teal)}
+  .vrow .masa{font-family:var(--mono);font-size:14px;color:var(--teal);text-align:right}
+  .vrow .del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0}
+  .vrow .del:hover{color:var(--danger)}
+  .vl{display:none}
+  .vsub{display:flex;justify-content:space-between;margin-top:11px;padding-top:10px;border-top:1px solid var(--line);font-size:13px;font-weight:600}
+  .vsub .val{font-family:var(--mono);color:var(--teal)}
+
+  .masa-title{display:flex;align-items:center;gap:9px;min-width:0;flex:1 1 auto}
+  .chev{font-size:10px;color:var(--muted);flex:0 0 auto;width:12px;text-align:center}
+  .masa-name{font-size:16px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .masa-sum{font-family:var(--mono);font-size:14px;color:var(--teal);font-weight:600;white-space:nowrap}
+  .day-section{margin-top:14px}
+  .day-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px}
+  .day-top .sectlabel{margin:0}
+  .dayhead{display:grid;grid-template-columns:1fr 88px 92px 24px;gap:8px;font-family:var(--mono);font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;padding:0 2px}
+  .dayhead span:nth-child(n+2){text-align:right}
+  .dayrow{display:grid;grid-template-columns:1fr 88px 92px 24px;gap:8px;align-items:center;margin-bottom:8px}
+  .dayrow .dname{min-width:0;display:flex;flex-direction:column;line-height:1.2;font-size:14px;font-weight:600}
+  .dayrow .dname small{font-family:var(--mono);font-size:10px;color:var(--muted);font-weight:400;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dayrow input{background:var(--surface2);border:1px solid var(--teal);color:var(--teal-deep);padding:8px 7px;border-radius:8px;font-size:15px;font-family:var(--mono);font-weight:600;text-align:right;outline:none;width:100%;min-width:0}
+  .dayrow input:focus{border-color:var(--teal-deep);background:var(--surface)}
+  .dayrow .masa{font-family:var(--mono);font-size:14px;color:var(--teal);text-align:right}
+  .dayrow .del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0;justify-self:end}
+  .dayrow .del:hover{color:var(--danger)}
+  .dayadd{width:100%;margin-top:4px;background:var(--surface2);border:1px dashed var(--line);color:var(--muted);padding:9px;border-radius:8px;font-family:var(--sans);font-weight:600;font-size:13px;cursor:pointer}
+  .dayadd:hover{border-color:var(--teal);color:var(--teal)}
+  .editcat{width:100%;margin-top:12px;background:none;border:1px solid var(--line);color:var(--muted);padding:9px;border-radius:9px;font-family:var(--sans);font-weight:600;font-size:12px;cursor:pointer}
+  .editcat:hover{border-color:var(--teal);color:var(--teal)}
+  .editcat.on{border-color:var(--teal);color:var(--teal);background:var(--cream)}
+  .catlabel{font-size:11px}
+  .weigh{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+  .weigh .res-group-title:first-child,.weigh .sectlabel:first-child{margin-top:0}
+
+  .receta{background:var(--surface2);border:1px solid var(--line);border-radius:11px;padding:13px;margin-top:14px}
+  .receta.hidden{display:none}
+  .presect{border-left:2px solid var(--wood);padding-left:11px;margin-bottom:12px}
+  .prelabel-input{font-family:var(--sans);font-size:13px;font-weight:600;color:var(--wood);background:none;border:none;border-bottom:1px solid transparent;outline:none;padding:2px 0;margin-bottom:6px;width:100%;max-width:200px}
+  .prelabel-input:focus{border-bottom-color:var(--line)}
+  .ingrow{display:grid;grid-template-columns:1fr 88px 24px;gap:7px;align-items:center;margin-bottom:6px}
+  .ingrow input{background:var(--surface);border:1px solid var(--line);color:var(--text);padding:6px 8px;border-radius:8px;font-size:13px;font-family:var(--sans);outline:none;width:100%}
+  .ingrow input[type=number]{font-family:var(--mono);text-align:right}
+  .ingrow input:focus{border-color:var(--teal)}
+  .ingrow .del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0}
+  .ingrow .del:hover{color:var(--danger)}
+  .addv{background:none;border:1px dashed var(--line);color:var(--muted);width:100%;padding:7px;border-radius:8px;cursor:pointer;font-family:var(--sans);font-weight:500;font-size:12px;margin-top:6px}
+  .addv:hover{border-color:var(--teal);color:var(--teal)}
+  .delrecipe{background:none;border:none;color:var(--danger);font-size:12px;cursor:pointer;margin-top:8px;font-family:var(--sans);font-weight:500}
+  .delrecipe:hover{text-decoration:underline}
+  .addrecipe{background:var(--teal);color:var(--cream);border:none;padding:12px 18px;border-radius:12px;font-family:var(--sans);font-weight:600;font-size:14px;cursor:pointer;width:100%}
+  .addrecipe:hover{background:var(--teal-deep)}
+
+  .amasado-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+  .amasado-row label{font-size:11px}
+  .amasado input{width:100%;background:var(--surface2);border:1px solid var(--line);color:var(--text);font-family:var(--mono);font-size:16px;padding:9px 11px;border-radius:10px;outline:none}
+  .amasado input:focus{border-color:var(--teal)}
+  .water-out{display:flex;align-items:baseline;gap:8px;margin-top:6px;background:var(--surface2);border-radius:12px;padding:16px 18px}
+  .water-out .big{font-family:var(--mono);font-size:40px;font-weight:600;color:var(--teal);line-height:1}
+  .water-out .unit{font-family:var(--mono);font-size:14px;color:var(--muted)}
+  .seedset{display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:13px;color:var(--muted)}
+  .seedset label{margin:0}
+  .seedset input{width:64px;background:var(--surface2);border:1px solid var(--line);color:var(--text);font-family:var(--mono);font-size:14px;padding:6px 8px;border-radius:8px;text-align:right;outline:none}
+  .seedset input:focus{border-color:var(--teal)}
+  .seedset .pct{font-family:var(--mono);color:var(--muted)}
+
+  .res-group-title{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--wood);margin:18px 0 4px}
+  .res-group-title:first-child{margin-top:0}
+  .res-line{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--line)}
+  .res-line .name{font-size:14px}
+  .res-line .val{font-family:var(--mono);font-size:16px;color:var(--good)}
+  .res-line.seeds .val{color:var(--wood)}
+  .res-preblock{border-left:2px solid var(--wood);padding-left:12px;margin:4px 0 6px}
+  .res-prelabel{font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--wood);margin:2px 0 2px}
+  .res-preblock .res-line{padding:7px 0;border-bottom:1px dashed var(--line)}
+  .res-preblock .res-line .val{color:var(--wood)}
+  .res-masatotal{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0 4px;margin-top:2px;border-top:1px solid var(--line);font-weight:600}
+  .res-masatotal .name{font-size:14px}
+  .res-masatotal .val{font-family:var(--mono);color:var(--teal);font-size:17px}
+  .res-divlabel{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:8px 0 2px}
+  .res-div{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:5px 0;font-size:13px}
+  .res-div .name{min-width:0}
+  .res-div .name small{color:var(--muted);font-family:var(--mono);font-size:10px;margin-left:5px}
+  .res-div .val{font-family:var(--mono);color:var(--text);font-size:14px;flex:0 0 auto;white-space:nowrap}
+  .grand{display:flex;justify-content:space-between;align-items:baseline;margin-top:8px;padding:14px 0 4px;border-top:2px solid var(--teal)}
+  .grand .name{font-weight:600;font-size:15px}
+  .grand .val{font-family:var(--mono);font-size:24px;font-weight:600;color:var(--teal)}
+  .empty{color:var(--muted);font-size:13px;padding:6px 0}
+
+  .footer{margin-top:34px;padding-top:18px;border-top:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:12px}
+  .footer-tools{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
+  .linkbtn{background:none;border:none;color:var(--wood);font-family:var(--mono);font-size:12px;cursor:pointer;text-decoration:underline;padding:0}
+  .linkbtn:hover{color:var(--teal)}
+  .linkbtn.faint{color:var(--muted);text-decoration:none}
+  .linkbtn.faint:hover{color:var(--danger);text-decoration:underline}
+  .io-panel{width:100%;max-width:520px;display:none}
+  .io-panel textarea{width:100%;height:130px;font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--surface);color:var(--text);resize:vertical;outline:none}
+  .io-panel textarea:focus{border-color:var(--teal)}
+  .io-actions{display:flex;gap:16px;margin-top:8px;justify-content:center}
+  .io-msg{font-family:var(--mono);font-size:11px;color:var(--good);text-align:center;min-height:14px;margin-top:4px}
+
+  @media(max-width:560px){
+    body{padding:18px 12px 52px}
+    .brand{gap:12px;margin-bottom:18px}
+    .logo{padding:11px 16px 10px}.logo .word{font-size:28px}
+    .brand-text h1{font-size:19px}
+    .intro{font-size:13px;margin-bottom:14px}
+    .card{padding:16px}.masa-block{padding:15px}
+    .receta{background:none;border:0;padding:0;margin-top:12px}
+    .vhead{display:none}
+    .vrow{position:relative;display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-areas:"name name name" "lw ls lm" "w s m" "lq lq lq" "q q q";gap:4px 8px;padding:13px;background:var(--surface2);border:1px solid var(--line);border-radius:13px;margin-bottom:11px}
+    .vrow input[data-f="name"]{grid-area:name;text-align:left;font-size:16px;font-weight:600;background:transparent;border:none;padding:0 26px 6px 0}
+    .vrow input[data-f="name"]:focus{border:none}
+    .vrow .del{position:absolute;top:12px;right:11px;font-size:22px}
+    .vl{display:block;font-family:var(--mono);font-size:8px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);text-align:center}
+    .vl-w{grid-area:lw}.vl-s{grid-area:ls}.vl-m{grid-area:lm}
+    .vrow input[data-f="w"]{grid-area:w}
+    .vrow input[data-f="s"]{grid-area:s}
+    .vrow input[data-f="w"],.vrow input[data-f="s"]{text-align:center;font-size:16px;background:var(--surface);padding:9px 4px;width:100%}
+    .vrow .masa{grid-area:m;text-align:center;align-self:center;font-size:15px;padding-top:6px}
+    .vl-q{grid-area:lq;background:var(--teal);color:var(--cream);font-family:var(--sans);font-weight:600;font-size:13px;text-transform:none;letter-spacing:0;text-align:left;padding:9px 13px 6px;border-radius:12px 12px 0 0;margin-top:8px}
+    .vrow input[data-f="q"]{grid-area:q;background:var(--surface);color:var(--teal-deep);border:2px solid var(--teal);border-top:none;font-size:26px;font-weight:700;text-align:left;padding:7px 13px 10px;border-radius:0 0 12px 12px;width:100%;font-family:var(--mono)}
+    .vrow input[data-f="q"]:focus{border-color:var(--teal);outline:none}
+    .dayhead{display:none}
+    .dayrow{position:relative;grid-template-columns:1fr 1fr;grid-template-areas:"name name" "qlabel masa" "q masa";gap:5px 10px;padding:13px;background:var(--surface2);border:1px solid var(--line);border-radius:13px;margin-bottom:11px}
+    .dayrow .dname{grid-area:name;padding-right:26px;font-size:16px}
+    .dayrow .dname small{font-size:11px}
+    .dayrow .vl-dq{grid-area:qlabel;align-self:end;text-align:left;font-size:9px}
+    .dayrow input{grid-area:q;text-align:left;font-size:24px;font-weight:700;padding:8px 12px;background:var(--surface);color:var(--teal-deep);border:2px solid var(--teal);max-width:150px}
+    .dayrow .masa{grid-area:masa;align-self:center;text-align:right;font-size:16px}
+    .dayrow .del{position:absolute;top:11px;right:12px;font-size:22px}
+    .ingrow{grid-template-columns:1fr 72px 24px}
+    .ingrow input,.amasado input,.masa-name-input,.prelabel-input,.seedset input{font-size:16px}
+    .water-out .big{font-size:36px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <div class="logo"><span class="sup">RITUAL DE CAFÉ</span><span class="word">fika</span></div>
+    <div class="brand-text">
+      <div class="eyebrow">Producción · Panadería</div>
+      <h1>Planificador de masas</h1>
+    </div>
+  </div>
+
+  <p class="intro">Cargá cuántas hogazas de cada variedad y obtené, por masa, qué pesar, la masa total, las semillas y cómo dividirla al final del amasado. Más la temperatura del agua según el día.</p>
+  <div class="savebar"><span id="saveState">Guardado automático en este navegador</span></div>
+
+  <div class="grid planner">
+    <div>
+      <div id="masaBlocks"></div>
+      <button class="addrecipe" id="addRecipe">+ Agregar masa / receta</button>
+    </div>
+    <div>
+      <div class="card amasado">
+        <h2>Temperatura del agua</h2>
+        <label>Temperatura ambiente del día (°C)</label>
+        <input id="ambient" type="number" value="24" step="0.5">
+        <div class="amasado-row">
+          <div><label>Masa objetivo (°C)</label><input id="ddt" type="number" value="28" step="0.5"></div>
+          <div><label>Factor de fricción (°C)</label><input id="ff" type="number" value="10" step="0.5"></div>
+        </div>
+        <div class="water-out"><span class="big" id="waterTemp">—</span><span class="unit">°C · usar para el agua</span></div>
+        <p class="note">Asume harina y prefermento a temperatura ambiente, amasado ~12 min. <b>Calibrá el factor de fricción</b> a tu amasadora: hacé una masa, medí su temperatura al final y ajustá el factor según la diferencia con los 28°.</p>
+      </div>
+      <div class="card">
+        <h2>Resumen de la tanda</h2>
+        <div class="seedset"><label for="seedHyd">Hidratación de semillas</label><input id="seedHyd" type="number" value="90" min="0" step="5"><span class="pct">%</span></div>
+        <p class="note">El detalle de ingredientes y la división al cortar de cada masa aparecen dentro de su bloque, al desplegarla.</p>
+        <div class="grand"><div class="name">Masa total de la tanda</div><div class="val" id="grandMasa">0 g</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-tools">
+      <button class="linkbtn" id="exportBtn">Exportar datos</button>
+      <button class="linkbtn" id="importBtn">Importar datos</button>
+      <button class="linkbtn faint" id="resetBtn">Restaurar valores de fábrica</button>
+    </div>
+    <div class="io-panel" id="ioPanel">
+      <textarea id="ioText" spellcheck="false" placeholder="Pegá acá los datos exportados y tocá &quot;Aplicar&quot;."></textarea>
+      <div class="io-actions">
+        <button class="linkbtn" id="ioApply">Aplicar datos pegados</button>
+        <button class="linkbtn faint" id="ioClose">Cerrar</button>
+      </div>
+      <div class="io-msg" id="ioMsg"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var recipes = [
+    {key:"semi", label:"Semi-integral", open:false, pre:null,
+      ings:[{name:"Masa madre",grams:109},{name:"Harina 000",grams:256},{name:"Harina integral",grams:256},{name:"Agua",grams:374},{name:"Sal",grams:10}],
+      vars:[{name:"Hogaza de Campo",w:840,q:20,s:0},{name:"Pan semillas",w:800,q:0,s:21},{name:"Tostada semi-integral",w:2000,q:0,s:0},{name:"Barra de semillas",w:1800,q:0,s:105}]},
+    {key:"integral", label:"100% integral", open:false, pre:null,
+      ings:[{name:"Masa madre",grams:100},{name:"Harina integral",grams:503},{name:"Agua",grams:387},{name:"Sal",grams:10}],
+      vars:[{name:"Hogaza Común",w:840,q:10,s:0}]},
+    {key:"blanco", label:"Blanco", open:false, pre:null,
+      ings:[{name:"Masa madre",grams:107},{name:"Harina 000",grams:535},{name:"Agua",grams:348},{name:"Sal",grams:11}],
+      vars:[{name:"Tostada Blanca",w:2000,q:15,s:0},{name:"Avocado",w:3000,q:0,s:0}]},
+    {key:"brioche", label:"Brioche", open:false,
+      pre:{label:"Poolish", ings:[{name:"Harina 000",grams:200},{name:"Leche",grams:200},{name:"Levadura seca",grams:2}]},
+      ings:[{name:"Harina 000",grams:800},{name:"Huevos",grams:200},{name:"Leche",grams:200},{name:"Azúcar",grams:120},{name:"Sal",grams:20},{name:"Levadura seca",grams:8},{name:"Manteca",grams:150}],
+      vars:[{name:"Brioche de Molde",w:1200,q:6,s:0},{name:"Sándwich pollo",w:150,q:0,s:0}]}
+  ];
+
+  var $=function(id){return document.getElementById(id)};
+  function g(x){return Math.round(x).toLocaleString("es-AR")+" g";}
+  function num(el){var v=parseFloat(el.value);return isNaN(v)?0:v;}
+  function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function escA(s){return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");}
+  function find(k){for(var i=0;i<recipes.length;i++){if(recipes[i].key===k)return recipes[i];}return null;}
+  function migrate(){ recipes.forEach(function(r){ if(!("pre" in r)) r.pre=null; if(!("dayOpen" in r)) r.dayOpen=false; (r.vars||[]).forEach(function(v){ if(v.s===undefined) v.s=0; }); }); }
+  var forceShown={}; // variedades agregadas a la tanda que siguen en 0 (clave "masa:indice"; no se persiste)
+
+  var KEY="fika_masas_v2", saveT, flashT, ready=false;
+  var storageOK=(function(){try{localStorage.setItem("__fk","1");localStorage.removeItem("__fk");return true;}catch(e){return false;}})();
+  function flashSaved(){var el=$("saveState"); if(!el)return; el.textContent="Guardado \u2713"; el.style.color="var(--good)"; clearTimeout(flashT); flashT=setTimeout(function(){el.textContent="Guardado automático en este navegador"; el.style.color="";},1200);}
+  function snapshot(){ return {recipes:recipes, water:{ambient:$("ambient").value, ddt:$("ddt").value, ff:$("ff").value}, seedHyd:$("seedHyd").value}; }
+  function persist(){ if(!storageOK) return; try{ localStorage.setItem(KEY, JSON.stringify(snapshot())); flashSaved(); }catch(e){} }
+  function scheduleSave(){ if(!ready) return; clearTimeout(saveT); saveT=setTimeout(persist,400); }
+  function applyData(d){ if(d&&Array.isArray(d.recipes)&&d.recipes.length){ recipes=d.recipes; migrate(); } if(d&&d.water){ ["ambient","ddt","ff"].forEach(function(k){ if(d.water[k]!==undefined && $(k)) $(k).value=d.water[k]; }); } if(d&&d.seedHyd!==undefined && $("seedHyd")) $("seedHyd").value=d.seedHyd; }
+  function loadState(){ if(!storageOK) return; try{ var raw=localStorage.getItem(KEY); if(!raw) return; applyData(JSON.parse(raw)); }catch(e){} }
+
+  function ingRows(r,arr,sec){
+    return arr.map(function(x,i){
+      return '<div class="ingrow">'+
+        '<input type="text" value="'+escA(x.name)+'" data-r="'+r.key+'" data-ing="'+i+'" data-sec="'+sec+'" data-f="name" placeholder="Ingrediente">'+
+        '<input type="number" min="0" step="1" value="'+x.grams+'" data-r="'+r.key+'" data-ing="'+i+'" data-sec="'+sec+'" data-f="grams">'+
+        '<button class="del" data-deling="'+r.key+'" data-sec="'+sec+'" data-i="'+i+'">&times;</button></div>';
+    }).join("");
+  }
+  function blockHtml(r){
+    // catálogo completo (detrás del lápiz): editar nombre, gramos, semillas, alta/baja de variedades
+    var catVars=r.vars.map(function(v,i){
+      return '<div class="vrow">'+
+        '<input type="text" value="'+escA(v.name)+'" data-r="'+r.key+'" data-var="'+i+'" data-f="name">'+
+        '<span class="vl vl-w">g c/u</span>'+
+        '<input type="number" min="1" step="10" value="'+v.w+'" data-r="'+r.key+'" data-var="'+i+'" data-f="w">'+
+        '<span class="vl vl-s">Sem. seco g/u</span>'+
+        '<input type="number" min="0" step="1" value="'+(v.s||0)+'" data-r="'+r.key+'" data-var="'+i+'" data-f="s">'+
+        '<span class="vl vl-q">Cantidad a producir</span>'+
+        '<input type="number" min="0" step="1" value="'+v.q+'" data-r="'+r.key+'" data-var="'+i+'" data-f="q">'+
+        '<span class="vl vl-m">Masa</span>'+
+        '<div class="masa" id="cmasa-'+r.key+'-'+i+'">0 g</div>'+
+        '<button class="del" data-delvar="'+r.key+'" data-i="'+i+'">&times;</button></div>';
+    }).join("");
+
+    // vista del día: solo variedades activas (cantidad > 0) o agregadas manualmente a la tanda
+    var dayRows="", inactiveOpts="";
+    r.vars.forEach(function(v,i){
+      if((v.q||0)>0 || forceShown[r.key+":"+i]){
+        dayRows+='<div class="dayrow">'+
+          '<div class="dname">'+esc(v.name)+'<small>'+(v.w||0)+' g c/u'+((v.s||0)>0?' · '+v.s+' g sem seco':'')+'</small></div>'+
+          '<span class="vl vl-dq">Cantidad a producir</span>'+
+          '<input type="number" min="0" step="1" value="'+v.q+'" data-r="'+r.key+'" data-var="'+i+'" data-f="q">'+
+          '<div class="masa" id="vmasa-'+r.key+'-'+i+'">0 g</div>'+
+          '<button class="del" data-delday="'+r.key+'" data-i="'+i+'" title="Quitar de la tanda">&times;</button></div>';
+      } else {
+        inactiveOpts+='<option value="'+i+'">'+esc(v.name)+'</option>';
+      }
+    });
+    var selector = inactiveOpts ? '<select class="dayadd" data-dayadd="'+r.key+'"><option value="">+ agregar variedad a la tanda</option>'+inactiveOpts+'</select>' : '';
+    var dayBody = (dayRows||'<div class="empty">Ninguna variedad cargada para hoy.</div>')+selector;
+
+    var preEditor;
+    if(r.pre){
+      preEditor='<div class="presect"><div class="sectlabel">Prefermento</div>'+
+        '<input class="prelabel-input" value="'+escA(r.pre.label)+'" data-r="'+r.key+'" data-f="prelabel">'+
+        ingRows(r,r.pre.ings,"pre")+
+        '<button class="addv" data-adding="'+r.key+'" data-sec="pre">+ ingrediente del prefermento</button>'+
+        '<button class="delrecipe" data-delpre="'+r.key+'">Quitar prefermento</button></div>';
+    } else {
+      preEditor='<button class="addv" data-addpre="'+r.key+'">+ agregar prefermento</button>';
+    }
+
+    return '<div class="masa-block'+(r.dayOpen?' open':'')+'">'+
+      '<div class="masa-head" data-day="'+r.key+'">'+
+        '<div class="masa-title"><span class="chev">'+(r.dayOpen?'▾':'▸')+'</span><span class="masa-name">'+esc(r.label)+'</span></div>'+
+        '<div class="head-right"><span class="masa-sum" id="vsub-'+r.key+'">0 g</span></div></div>'+
+      (r.dayOpen ?
+        '<div class="day-section">'+
+          '<div class="day-top"><span class="sectlabel">A producir hoy</span><span class="hyd" id="hyd-'+r.key+'"></span></div>'+
+          '<div class="dayhead"><span>Variedad</span><span>Cantidad</span><span>Masa</span><span></span></div>'+
+          dayBody+
+          '<div class="weigh" id="weigh-'+r.key+'"></div>'+
+          '<button class="editcat'+(r.open?' on':'')+'" data-toggle="'+r.key+'">'+(r.open?'✕ Cerrar edición':'✎ Editar variedades y receta')+'</button>'+
+          '<div class="receta'+(r.open?'':' hidden')+'">'+
+            '<label class="catlabel">Nombre de la masa</label>'+
+            '<input class="masa-name-input" value="'+escA(r.label)+'" data-r="'+r.key+'" data-f="label">'+
+            '<div class="sectlabel">Variedades · catálogo</div>'+
+            '<div class="vhead"><span>Variedad</span><span>g c/u</span><span>Sem. seco</span><span>Cant.</span><span>Masa</span><span></span></div>'+catVars+
+            '<button class="addv" data-addvar="'+r.key+'">+ variedad</button>'+
+            preEditor+
+            '<div class="sectlabel">Receta · gramos base</div>'+ingRows(r,r.ings,"main")+
+            '<button class="addv" data-adding="'+r.key+'" data-sec="main">+ ingrediente</button>'+
+            '<button class="delrecipe" data-delr="'+r.key+'">Borrar esta masa</button></div>'+
+        '</div>'
+      : '')+
+      '</div>';
+  }
+  function rebuild(){ $("masaBlocks").innerHTML=recipes.map(blockHtml).join(""); recompute(); }
+
+  function recompute(){
+    var grand=0;
+    recipes.forEach(function(r){
+      var preTotal = r.pre? r.pre.ings.reduce(function(a,x){return a+(x.grams||0)},0) : 0;
+      var mainTotal = r.ings.reduce(function(a,x){return a+(x.grams||0)},0);
+      var refTotal = preTotal+mainTotal;
+      var D=r.vars.reduce(function(a,v){return a+((v.q||0)*(v.w||0))},0);
+      r.vars.forEach(function(v,i){var t=g((v.q||0)*(v.w||0)); var e1=$("vmasa-"+r.key+"-"+i); if(e1) e1.textContent=t; var e2=$("cmasa-"+r.key+"-"+i); if(e2) e2.textContent=t;});
+      var sub=$("vsub-"+r.key); if(sub) sub.textContent=g(D);
+      var flour=0,water=0, all=(r.pre?r.pre.ings:[]).concat(r.ings);
+      all.forEach(function(x){ if(/^\s*harina/i.test(x.name)) flour+=x.grams||0; if(/agua/i.test(x.name)) water+=x.grams||0; });
+      var he=$("hyd-"+r.key); if(he) he.textContent=(flour>0&&water>0)?("hidratación "+Math.round(water/flour*100)+"%"):"";
+      grand+=D; r._D=D; r._seeds=r.vars.reduce(function(a,v){return a+((v.q||0)*(v.s||0))},0);
+      var factor=(D>0&&refTotal>0)?(D/refTotal):null;
+      r._pre=(factor&&r.pre)?r.pre.ings.map(function(x){return {name:x.name,v:x.grams*factor}}):null;
+      r._w=factor?r.ings.map(function(x){return {name:x.name,v:x.grams*factor}}):null;
+    });
+    $("grandMasa").textContent=g(grand);
+
+    recipes.forEach(function(r){
+      var we=$("weigh-"+r.key); if(!we) return; // solo las masas expandidas tienen contenedor
+      if(!r._w){ we.innerHTML='<div class="empty">Cargá cantidades arriba para ver los ingredientes a pesar.</div>'; return; }
+      var html='<div class="sectlabel weigh-label">Ingredientes a pesar</div>';
+      if(r._pre){
+        html+='<div class="res-preblock"><div class="res-prelabel">'+esc(r.pre.label)+' · aparte</div>';
+        r._pre.forEach(function(it){ if(it.v>0.5) html+='<div class="res-line"><div class="name">'+esc(it.name)+'</div><div class="val">'+g(it.v)+'</div></div>'; });
+        html+='</div>';
+      }
+      r._w.forEach(function(it){ if(it.v>0.5) html+='<div class="res-line"><div class="name">'+esc(it.name)+'</div><div class="val">'+g(it.v)+'</div></div>'; });
+      html+='<div class="res-masatotal"><div class="name">Masa total</div><div class="val">'+g(r._D)+'</div></div>';
+      if(r._seeds>0.5){ var sh=num($("seedHyd")); var dry=r._seeds; var wat=dry*sh/100; var hyd=dry+wat; html+='<div class="res-line seeds"><div class="name">Semillas (en seco) a pesar</div><div class="val">'+g(dry)+'</div></div>'+'<div class="res-line seeds"><div class="name">Agua de remojo <small>('+sh+'%)</small></div><div class="val">'+g(wat)+'</div></div>'+'<div class="res-line seeds"><div class="name">&rarr; semillas hidratadas</div><div class="val">'+g(hyd)+'</div></div>'; }
+      var divs=r.vars.filter(function(v){return (v.q||0)>0 && (v.w||0)>0;});
+      if(divs.length){
+        html+='<div class="res-divlabel">División al cortar · masa por variedad</div>';
+        divs.forEach(function(v){
+          var sd=(v.s>0)?' · sem hidratadas '+Math.round(v.q*v.s*(1+num($("seedHyd"))/100))+' g':'';
+          html+='<div class="res-div"><div class="name">'+esc(v.name)+'<small>'+v.q+' × '+v.w+' g'+sd+'</small></div><div class="val">'+g(v.q*v.w)+'</div></div>';
+        });
+      }
+      we.innerHTML=html;
+    });
+    scheduleSave();
+  }
+
+  function waterCalc(){
+    var amb=num($("ambient")), ddt=num($("ddt")), ff=num($("ff"));
+    var w = ddt*3 - amb*2 - ff;
+    $("waterTemp").textContent = isFinite(w) ? (Math.round(w*10)/10) : "—";
+    scheduleSave();
+  }
+
+  var blocks=$("masaBlocks");
+  blocks.addEventListener("input",function(e){
+    var t=e.target; if(t.tagName!=="INPUT") return;
+    var r=find(t.dataset.r); if(!r) return; var f=t.dataset.f;
+    if(f==="prelabel"){ if(r.pre) r.pre.label=t.value; recompute(); return; }
+    if(t.dataset.ing!==undefined){
+      var arr = (t.dataset.sec==="pre" && r.pre)? r.pre.ings : r.ings;
+      arr[+t.dataset.ing][f] = (f==="grams")?(parseFloat(t.value)||0):t.value;
+    } else if(t.dataset.var!==undefined){
+      r.vars[+t.dataset.var][f] = (f==="name")?t.value:(parseFloat(t.value)||0);
+    } else { r[f]=t.value; }
+    recompute();
+  });
+  blocks.addEventListener("click",function(e){
+    var head=e.target.closest(".masa-head");
+    if(head && head.dataset.day!==undefined){ var rh=find(head.dataset.day); if(rh){ rh.dayOpen=!rh.dayOpen; rebuild(); } return; }
+    var b=e.target.closest("button"); if(!b) return; var r;
+    if(b.dataset.toggle!==undefined){ r=find(b.dataset.toggle); r.open=!r.open; rebuild(); }
+    else if(b.dataset.delday!==undefined){ r=find(b.dataset.delday); var dv=r.vars[+b.dataset.i]; if(dv){ dv.q=0; } delete forceShown[b.dataset.delday+":"+b.dataset.i]; rebuild(); }
+    else if(b.dataset.addvar!==undefined){ r=find(b.dataset.addvar); var nv={name:"Nueva variedad",w:800,q:0,s:0}; r.vars.push(nv); forceShown[b.dataset.addvar+":"+(r.vars.length-1)]=true; rebuild(); }
+    else if(b.dataset.delvar!==undefined){ find(b.dataset.delvar).vars.splice(+b.dataset.i,1); forceShown={}; rebuild(); }
+    else if(b.dataset.adding!==undefined){ r=find(b.dataset.adding); (b.dataset.sec==="pre"&&r.pre?r.pre.ings:r.ings).push({name:"",grams:0}); rebuild(); }
+    else if(b.dataset.deling!==undefined){ r=find(b.dataset.deling); (b.dataset.sec==="pre"&&r.pre?r.pre.ings:r.ings).splice(+b.dataset.i,1); rebuild(); }
+    else if(b.dataset.addpre!==undefined){ r=find(b.dataset.addpre); r.pre={label:"Poolish",ings:[{name:"Harina 000",grams:0},{name:"Agua",grams:0},{name:"Levadura",grams:0}]}; r.open=true; rebuild(); }
+    else if(b.dataset.delpre!==undefined){ find(b.dataset.delpre).pre=null; rebuild(); }
+    else if(b.dataset.delr!==undefined){ recipes=recipes.filter(function(x){return x.key!==b.dataset.delr}); forceShown={}; rebuild(); }
+  });
+  blocks.addEventListener("change",function(e){
+    var t=e.target; if(t.tagName!=="SELECT" || t.dataset.dayadd===undefined) return;
+    var r=find(t.dataset.dayadd); if(!r) return;
+    var idx=parseInt(t.value,10);
+    if(!isNaN(idx) && r.vars[idx]){ forceShown[t.dataset.dayadd+":"+idx]=true; rebuild(); }
+  });
+  $("addRecipe").addEventListener("click",function(){
+    recipes.push({key:"r"+Date.now(), label:"Nueva masa", open:true, dayOpen:true, pre:null,
+      ings:[{name:"Harina 000",grams:1000},{name:"Agua",grams:650},{name:"Sal",grams:20}],
+      vars:[{name:"Hogaza",w:800,q:0,s:0}]});
+    rebuild();
+  });
+  ["ambient","ddt","ff"].forEach(function(id){$(id).addEventListener("input",waterCalc);});
+  $("seedHyd").addEventListener("input",recompute);
+
+  // exportar / importar / restaurar
+  function showIO(text, msg){ $("ioText").value=text||""; $("ioMsg").textContent=msg||""; $("ioPanel").style.display="block"; }
+  $("exportBtn").addEventListener("click",function(){
+    var data=JSON.stringify(snapshot(),null,2);
+    showIO(data,"Copiá este texto y guardalo (o pegámelo en el chat).");
+    try{ $("ioText").focus(); $("ioText").select(); }catch(e){}
+    try{ navigator.clipboard.writeText(data); $("ioMsg").textContent="Copiado al portapapeles \u2713"; }catch(e){}
+  });
+  $("importBtn").addEventListener("click",function(){ showIO("","Pegá acá los datos y tocá Aplicar."); try{$("ioText").focus();}catch(e){} });
+  $("ioApply").addEventListener("click",function(){
+    try{ var d=JSON.parse($("ioText").value); if(!d||!Array.isArray(d.recipes)) throw 0;
+      applyData(d); persist(); rebuild(); waterCalc(); $("ioMsg").textContent="Datos importados \u2713";
+    }catch(e){ $("ioMsg").style.color="var(--danger)"; $("ioMsg").textContent="No pude leer esos datos. Revisá que esté completo."; }
+  });
+  $("ioClose").addEventListener("click",function(){ $("ioPanel").style.display="none"; });
+  $("resetBtn").addEventListener("click",function(){
+    if(!confirm("¿Restaurar valores de fábrica?\n\nSe van a borrar TODAS tus masas, variedades y cantidades guardadas en este navegador. Si querés conservarlas, primero usá \"Exportar datos\".")) return;
+    if(!confirm("Última confirmación: esta acción NO se puede deshacer.\n\n¿Borrar todo y volver a los valores de fábrica?")) return;
+    if(storageOK){try{localStorage.removeItem(KEY);}catch(e){}}
+    location.reload();
+  });
+  if(!storageOK){ var ss=$("saveState"); if(ss) ss.textContent="El guardado funciona en la página publicada"; }
+
+  try{
+    loadState();
+    migrate();
+    rebuild();
+    waterCalc();
+    ready=true;
+  }catch(err){
+    try{ var mb=$("masaBlocks"); if(mb){ mb.innerHTML='<div class="empty">Ocurrió un error al cargar la herramienta: '+esc((err&&err.message)||err)+'. Saca una captura y compartila para arreglarlo.</div>'; } }catch(e2){}
+  }
+})();
+</script>
+</body>
+</html>
