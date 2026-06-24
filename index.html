@@ -382,20 +382,16 @@
       '</div>';
   }
   function block2Html(r){
-    var dayRows="", inactiveOpts="";
+    var dayRows="";
     r.vars.forEach(function(v,i){
       var qv=+v.q2||0;
-      if(qv>0 || forceShown2[r.key+":"+i]){
-        dayRows+='<div class="dayrow">'+
-          '<div class="dname">'+esc(v.name)+'<small>'+(v.w||0)+' g c/u'+((v.s||0)>0?' · '+v.s+' g sem seco':'')+'</small></div>'+
-          '<span class="vl vl-dq">Cantidad a producir</span>'+
-          '<input type="number" min="0" step="1" value="'+qv+'" data-r="'+r.key+'" data-var="'+i+'" data-f="q2">'+
-          '<div class="masa" id="vmasa2-'+r.key+'-'+i+'">0 g</div>'+
-          '<button class="del" data-delday="'+r.key+'" data-i="'+i+'" data-am="2" title="Quitar de la tanda">&times;</button></div>';
-      } else { inactiveOpts+='<option value="'+i+'">'+esc(v.name)+'</option>'; }
+      dayRows+='<div class="dayrow">'+
+        '<div class="dname">'+esc(v.name)+'<small>'+(v.w||0)+' g c/u'+((v.s||0)>0?' · '+v.s+' g sem seco':'')+'</small></div>'+
+        '<span class="vl vl-dq">Cantidad a producir</span>'+
+        '<input type="number" min="0" step="1" value="'+qv+'" data-r="'+r.key+'" data-var="'+i+'" data-f="q2">'+
+        '<div class="masa" id="vmasa2-'+r.key+'-'+i+'">0 g</div></div>';
     });
-    var selector = inactiveOpts ? '<select class="dayadd" data-dayadd="'+r.key+'" data-am="2"><option value="">+ agregar variedad a la tanda</option>'+inactiveOpts+'</select>' : '';
-    var dayBody=(dayRows||'<div class="empty">Ninguna variedad cargada para hoy.</div>')+selector;
+    var dayBody = dayRows || '<div class="empty">Esta masa no tiene variedades.</div>';
     return '<div class="masa-block'+(r.dayOpen2?' open':'')+'">'+
       '<div class="masa-head" data-day2="'+r.key+'">'+
         '<div class="masa-title"><span class="chev">'+(r.dayOpen2?'▾':'▸')+'</span><span class="masa-name">'+esc(r.label)+'</span></div>'+
