@@ -402,7 +402,7 @@
         '<span class="vl vl-s">Sem. seco g/u</span>'+
         '<input type="number" min="0" step="1" value="'+(v.s||0)+'" data-r="'+r.key+'" data-var="'+i+'" data-f="s">'+
         '<span class="vl vl-q">Cantidad a producir</span>'+
-        '<input type="number" min="0" step="1" value="'+v.q+'" data-r="'+r.key+'" data-var="'+i+'" data-f="q">'+
+        '<input type="number" min="0" step="1" value="'+(v.q>0?v.q:"")+'" placeholder="—" data-r="'+r.key+'" data-var="'+i+'" data-f="q">'+
         '<span class="vl vl-m">Masa</span>'+
         '<div class="masa" id="cmasa-'+r.key+'-'+i+'">0 g</div>'+
         '<button class="del" data-delvar="'+r.key+'" data-i="'+i+'">&times;</button></div>';
@@ -415,7 +415,7 @@
         dayRows+='<div class="dayrow">'+
           '<div class="dname">'+esc(v.name)+'<small>'+(v.w||0)+' g c/u'+((v.s||0)>0?' · '+v.s+' g sem seco':'')+'</small></div>'+
           '<span class="vl vl-dq">Cantidad a producir</span>'+
-          '<input type="number" min="0" step="1" value="'+v.q+'" data-r="'+r.key+'" data-var="'+i+'" data-f="q">'+
+          '<input type="number" min="0" step="1" value="'+(v.q>0?v.q:"")+'" placeholder="—" data-r="'+r.key+'" data-var="'+i+'" data-f="q">'+
           '<div class="masa" id="vmasa-'+r.key+'-'+i+'">0 g</div>'+
           '<button class="del" data-delday="'+r.key+'" data-i="'+i+'" title="Quitar de la tanda">&times;</button></div>';
       } else {
@@ -469,7 +469,7 @@
       dayRows+='<div class="dayrow">'+
         '<div class="dname">'+esc(v.name)+'<small>'+(v.w||0)+' g c/u'+((v.s||0)>0?' · '+v.s+' g sem seco':'')+'</small></div>'+
         '<span class="vl vl-dq">Cantidad a producir</span>'+
-        '<input type="number" min="0" step="1" value="'+qv+'" data-r="'+r.key+'" data-var="'+i+'" data-f="q2">'+
+        '<input type="number" min="0" step="1" value="'+(qv>0?qv:"")+'" placeholder="—" data-r="'+r.key+'" data-var="'+i+'" data-f="q2">'+
         '<div class="masa" id="vmasa2-'+r.key+'-'+i+'">0 g</div></div>';
     });
     var dayBody = dayRows || '<div class="empty">Esta masa no tiene variedades.</div>';
