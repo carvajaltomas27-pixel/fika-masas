@@ -215,6 +215,26 @@
   @media(max-width:560px){ .mmset input{font-size:16px} }
   .printbtn{width:100%;margin-top:14px;background:var(--teal);color:var(--cream);border:none;padding:12px;border-radius:12px;font-family:var(--sans);font-weight:600;font-size:14px;cursor:pointer}
   .printbtn:hover{background:var(--teal-deep)}
+  .calcbtn{width:100%;margin-top:8px;background:none;color:var(--teal);border:1px solid var(--teal);padding:11px;border-radius:12px;font-family:var(--sans);font-weight:600;font-size:14px;cursor:pointer}
+  .calcbtn:hover{background:var(--cream)}
+  .calc-overlay{display:none;position:fixed;inset:0;background:rgba(42,39,34,.45);z-index:50;padding:18px;overflow:auto;-webkit-overflow-scrolling:touch}
+  .calc-overlay.on{display:block}
+  .calc-box{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;max-width:420px;width:100%;margin:36px auto;box-shadow:0 10px 36px rgba(42,39,34,.25)}
+  .calc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+  .calc-head span{font-weight:700;font-size:17px;color:var(--text)}
+  .calc-head button{background:none;border:none;font-size:24px;line-height:1;color:var(--muted);cursor:pointer;padding:0}
+  .calc-head button:hover{color:var(--danger)}
+  .calc-hyd{font-family:var(--mono);font-size:13px;color:var(--teal);margin-bottom:18px;display:flex;align-items:center;gap:7px}
+  .calc-hyd input{width:60px;background:var(--surface2);border:1px solid var(--line);color:var(--text);font-family:var(--mono);font-size:16px;padding:7px 8px;border-radius:8px;text-align:right;outline:none}
+  .calc-hyd input:focus{border-color:var(--teal)}
+  .calc-row{margin-bottom:16px}
+  .calc-row label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+  .calc-row input{width:100%;background:var(--surface2);border:1px solid var(--line);color:var(--teal-deep);font-family:var(--mono);font-size:22px;font-weight:700;padding:10px 12px;border-radius:10px;outline:none}
+  .calc-row input:focus{border-color:var(--teal);background:var(--surface)}
+  .calc-out{font-family:var(--mono);font-size:15px;color:var(--teal);margin-top:8px}
+  .calc-out b{color:var(--teal-deep)}
+  .calc-sep{text-align:center;font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin:6px 0 14px}
+  .calc-note{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.45}
 
   #printArea{display:none;font-family:var(--sans);color:#1a1a1a;line-height:1.4}
   #printArea .p-head{display:flex;align-items:baseline;gap:10px;border-bottom:2px solid var(--teal);padding-bottom:6px;margin-bottom:8px}
@@ -243,6 +263,7 @@
   @media print{
     body{background:#fff !important;padding:0;margin:0}
     body>.wrap{display:none !important}
+    .calc-overlay{display:none !important}
     #printArea{display:block !important}
     @page{margin:12mm}
   }
@@ -292,6 +313,7 @@
         <div class="res-line" id="g2row" style="display:none"><div class="name">2° amasado</div><div class="val" id="grand2">0 g</div></div>
         <div class="grand"><div class="name">Masa total de la tanda</div><div class="val" id="grandMasa">0 g</div></div>
         <button class="printbtn" id="printBtn">Imprimir / Guardar PDF</button>
+        <button class="calcbtn" id="calcBtn">Calculadora de masa madre</button>
       </div>
     </div>
   </div>
@@ -313,6 +335,16 @@
   </div>
 </div>
 <div id="printArea"></div>
+<div class="calc-overlay" id="calcOverlay">
+  <div class="calc-box">
+    <div class="calc-head"><span>Calculadora de masa madre</span><button id="calcClose" title="Cerrar">&times;</button></div>
+    <div class="calc-hyd">Hidratación <input id="calcHyd" type="number" value="47" min="0" step="1"> %</div>
+    <div class="calc-row"><label>Masa madre total que querés (g)</label><input id="calcTotal" type="number" min="0" placeholder="0"><div class="calc-out" id="calcTotalOut">Harina — · Agua —</div></div>
+    <div class="calc-sep">o al revés</div>
+    <div class="calc-row"><label>Si partís de la harina (g)</label><input id="calcFlour" type="number" min="0" placeholder="0"><div class="calc-out" id="calcFlourOut">Agua — · Total —</div></div>
+    <p class="calc-note">La hidratación es el agua como % de la harina. Toma por defecto la que tengas configurada arriba (47%).</p>
+  </div>
+</div>
 
 <script>
 (function(){
@@ -703,6 +735,19 @@
   }
   function printPlan(){ $("printArea").innerHTML=buildPrintHTML(); window.print(); }
   $("printBtn").addEventListener("click",printPlan);
+
+  // calculadora de masa madre (independiente de la producción)
+  function calcUpdate(){
+    var h=num($("calcHyd"));
+    var t=parseFloat($("calcTotal").value);
+    $("calcTotalOut").innerHTML=(!isNaN(t)&&t>0)?('Harina <b>'+g(t/(1+h/100))+'</b> &middot; Agua <b>'+g(t-t/(1+h/100))+'</b>'):'Harina — &middot; Agua —';
+    var fl=parseFloat($("calcFlour").value);
+    $("calcFlourOut").innerHTML=(!isNaN(fl)&&fl>0)?('Agua <b>'+g(fl*h/100)+'</b> &middot; Total <b>'+g(fl+fl*h/100)+'</b>'):'Agua — &middot; Total —';
+  }
+  $("calcBtn").addEventListener("click",function(){ var mh=$("mmHyd"); if(mh&&mh.value) $("calcHyd").value=mh.value; calcUpdate(); $("calcOverlay").classList.add("on"); });
+  $("calcClose").addEventListener("click",function(){ $("calcOverlay").classList.remove("on"); });
+  $("calcOverlay").addEventListener("click",function(e){ if(e.target===$("calcOverlay")) $("calcOverlay").classList.remove("on"); });
+  ["calcHyd","calcTotal","calcFlour"].forEach(function(id){ var el=$(id); if(el) el.addEventListener("input",calcUpdate); });
 
   // exportar / importar / restaurar
   function showIO(text, msg){ $("ioText").value=text||""; $("ioMsg").textContent=msg||""; $("ioPanel").style.display="block"; }
