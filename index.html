@@ -249,7 +249,12 @@
   #printArea .p-coltitle{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#999;font-weight:700;margin:7px 0 2px}
   #printArea .p-ings{font-size:12px;line-height:1.55}
   #printArea .p-ings.p-pre{color:#555;font-style:italic;margin-bottom:1px}
-  #printArea .p-note{font-family:var(--mono);font-size:10.5px;color:#555;margin-top:3px}
+  #printArea .p-note{font-family:var(--mono);font-size:10.5px;color:#555;margin-top:5px}
+  #printArea table.p-ing{width:100%;border-collapse:collapse;margin:2px 0 4px}
+  #printArea table.p-ing td{padding:3px 0;border-bottom:1px solid #eee;font-size:12px;vertical-align:baseline}
+  #printArea table.p-ing td:first-child{font-family:var(--sans);color:#222}
+  #printArea table.p-ing td:last-child{text-align:right;font-family:var(--mono);font-weight:700;color:#1a1a1a;white-space:nowrap;width:110px}
+  #printArea table.p-ing tr.sub td{font-family:var(--mono);font-size:8.5px;letter-spacing:.04em;text-transform:uppercase;color:#999;font-weight:700;border-bottom:1.5px solid #ddd;padding-top:6px}
   #printArea table.p-div{width:100%;border-collapse:collapse;margin-top:2px}
   #printArea table.p-div th{font-family:var(--mono);font-size:8.5px;letter-spacing:.04em;text-transform:uppercase;color:#999;font-weight:700;text-align:right;padding:0 4px 3px 0;border-bottom:1.5px solid var(--teal)}
   #printArea table.p-div th:first-child{text-align:left}
@@ -704,11 +709,12 @@
       list.forEach(function(r){
         var p=planMasa(r,A.qf,A.cobf,sh); grand+=p.D;
         html+='<div class="p-masa"><div class="p-mh"><span>'+esc(r.label)+'</span><span class="p-mt">'+g(p.D)+' de masa</span></div>';
-        // ingredientes totales por masa
+        // ingredientes totales por masa (tabla limpia: ingrediente · gramos)
         html+='<div class="p-coltitle">Ingredientes a pesar</div>';
-        if(p.pre){ var pl=p.pre.filter(function(it){return it.v>0.5;}).map(function(it){return esc(it.name)+' '+g(it.v);}).join(' · '); if(pl) html+='<div class="p-ings p-pre">'+esc(r.pre.label)+' (aparte): '+pl+'</div>'; }
-        var il=p.ings.filter(function(it){return it.v>0.5;}).map(function(it){return esc(it.name)+' <b>'+g(it.v)+'</b>';}).join(' · ');
-        if(il) html+='<div class="p-ings">'+il+'</div>';
+        html+='<table class="p-ing">';
+        if(p.pre){ var prr=p.pre.filter(function(it){return it.v>0.5;}); if(prr.length){ html+='<tr class="sub"><td colspan="2">'+esc(r.pre.label)+' · aparte</td></tr>'; prr.forEach(function(it){ html+='<tr><td>'+esc(it.name)+'</td><td>'+g(it.v)+'</td></tr>'; }); html+='<tr class="sub"><td colspan="2">Masa</td></tr>'; } }
+        p.ings.filter(function(it){return it.v>0.5;}).forEach(function(it){ html+='<tr><td>'+esc(it.name)+'</td><td>'+g(it.v)+'</td></tr>'; });
+        html+='</table>';
         var notes=[];
         if(p.seedsDry>0.5) notes.push('Semillas: '+g(p.seedsDry)+' en seco + '+g(p.seedsWater)+' agua remojo ('+sh+'%)');
         if(p.cob>0.5) notes.push('Cobertura: '+g(p.cob)+' (masa de más)');
