@@ -215,10 +215,19 @@
   #printArea .p-water{font-family:var(--mono);font-size:12px;margin-bottom:6px}
   #printArea .p-amasado{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--wood);margin:12px 0 5px;font-weight:700}
   #printArea .p-masa{border:1px solid #ccc;border-radius:7px;padding:8px 10px;margin-bottom:8px;page-break-inside:avoid;break-inside:avoid}
-  #printArea .p-mh{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;font-size:14px;margin-bottom:4px}
-  #printArea .p-mt{font-family:var(--mono);color:var(--teal)}
-  #printArea .p-row{font-size:12px;line-height:1.5;margin:2px 0}
-  #printArea .p-lbl{font-weight:600;color:#555}
+  #printArea .p-mh{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;font-size:15px;margin-bottom:5px;border-bottom:1px solid #eee;padding-bottom:3px}
+  #printArea .p-mt{font-family:var(--mono);color:var(--teal);font-size:13px}
+  #printArea .p-coltitle{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#999;font-weight:700;margin:7px 0 2px}
+  #printArea .p-ings{font-size:12px;line-height:1.55}
+  #printArea .p-ings.p-pre{color:#555;font-style:italic;margin-bottom:1px}
+  #printArea .p-note{font-family:var(--mono);font-size:10.5px;color:#555;margin-top:3px}
+  #printArea table.p-div{width:100%;border-collapse:collapse;margin-top:2px}
+  #printArea table.p-div th{font-family:var(--mono);font-size:8.5px;letter-spacing:.04em;text-transform:uppercase;color:#999;font-weight:700;text-align:right;padding:0 4px 3px 0;border-bottom:1.5px solid var(--teal)}
+  #printArea table.p-div th:first-child{text-align:left}
+  #printArea table.p-div td{padding:4px 4px 4px 0;border-bottom:1px solid #e8e8e8;text-align:right;font-family:var(--mono);font-size:12px;white-space:nowrap}
+  #printArea table.p-div td:first-child{text-align:left;font-family:var(--sans);white-space:normal;width:46%;line-height:1.2}
+  #printArea table.p-div td.qty{font-weight:700;font-size:15px;color:var(--teal-deep)}
+  #printArea table.p-div .sem{display:block;font-family:var(--mono);font-size:9px;color:#999;font-weight:400}
   #printArea .p-grand{display:flex;justify-content:space-between;border-top:2px solid var(--teal);margin-top:10px;padding-top:7px;font-weight:700;font-size:14px}
   #printArea .p-grand .pv{font-family:var(--mono);color:var(--teal)}
   #printArea .p-empty{font-size:13px;color:#666;padding:20px 0}
@@ -627,14 +636,26 @@
     function render(list,A){
       list.forEach(function(r){
         var p=planMasa(r,A.qf,A.cobf,sh); grand+=p.D;
-        html+='<div class="p-masa"><div class="p-mh"><span>'+esc(r.label)+'</span><span class="p-mt">'+g(p.D)+'</span></div>';
-        if(p.pre){ var pl=p.pre.filter(function(it){return it.v>0.5;}).map(function(it){return esc(it.name)+' '+g(it.v);}).join(' · '); if(pl) html+='<div class="p-row"><span class="p-lbl">'+esc(r.pre.label)+' (aparte):</span> '+pl+'</div>'; }
-        var il=p.ings.filter(function(it){return it.v>0.5;}).map(function(it){return esc(it.name)+' '+g(it.v);}).join(' · ');
-        if(il) html+='<div class="p-row"><span class="p-lbl">Pesar:</span> '+il+'</div>';
-        if(p.seedsDry>0.5) html+='<div class="p-row"><span class="p-lbl">Semillas:</span> '+g(p.seedsDry)+' en seco + '+g(p.seedsWater)+' agua de remojo ('+sh+'%)</div>';
-        var dl=p.divs.map(function(d){ var sd=d.s>0?' (sem '+Math.round(d.q*d.s*(1+sh/100))+' g)':''; return esc(d.name)+' '+d.q+'×'+d.w+' g'+sd; }).join(' · ');
-        if(dl) html+='<div class="p-row"><span class="p-lbl">Cortar:</span> '+dl+'</div>';
-        if(p.cob>0.5) html+='<div class="p-row"><span class="p-lbl">Cobertura:</span> '+g(p.cob)+' (masa de más)</div>';
+        html+='<div class="p-masa"><div class="p-mh"><span>'+esc(r.label)+'</span><span class="p-mt">'+g(p.D)+' de masa</span></div>';
+        // ingredientes totales por masa
+        html+='<div class="p-coltitle">Ingredientes a pesar</div>';
+        if(p.pre){ var pl=p.pre.filter(function(it){return it.v>0.5;}).map(function(it){return esc(it.name)+' '+g(it.v);}).join(' · '); if(pl) html+='<div class="p-ings p-pre">'+esc(r.pre.label)+' (aparte): '+pl+'</div>'; }
+        var il=p.ings.filter(function(it){return it.v>0.5;}).map(function(it){return esc(it.name)+' <b>'+g(it.v)+'</b>';}).join(' · ');
+        if(il) html+='<div class="p-ings">'+il+'</div>';
+        var notes=[];
+        if(p.seedsDry>0.5) notes.push('Semillas: '+g(p.seedsDry)+' en seco + '+g(p.seedsWater)+' agua remojo ('+sh+'%)');
+        if(p.cob>0.5) notes.push('Cobertura: '+g(p.cob)+' (masa de más)');
+        if(notes.length) html+='<div class="p-note">'+notes.join('  ·  ')+'</div>';
+        // división: tabla clara con cantidad y pesos
+        if(p.divs.length){
+          html+='<div class="p-coltitle">Cortar · cantidades y pesos</div>';
+          html+='<table class="p-div"><tr><th>Variedad de pan</th><th>Cantidad</th><th>Peso c/u</th><th>Total</th></tr>';
+          p.divs.forEach(function(d){
+            var sem=d.s>0?'<span class="sem">semillas: '+Math.round(d.q*d.s*(1+sh/100))+' g (hidratadas)</span>':'';
+            html+='<tr><td>'+esc(d.name)+sem+'</td><td class="qty">'+d.q+'</td><td>'+d.w+' g</td><td>'+g(d.q*d.w)+'</td></tr>';
+          });
+          html+='</table>';
+        }
         html+='</div>';
       });
     }
