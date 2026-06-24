@@ -203,6 +203,31 @@
     .cobin{font-size:16px;width:74px}
     .water-out .big{font-size:36px}
   }
+
+  .printbtn{width:100%;margin-top:14px;background:var(--teal);color:var(--cream);border:none;padding:12px;border-radius:12px;font-family:var(--sans);font-weight:600;font-size:14px;cursor:pointer}
+  .printbtn:hover{background:var(--teal-deep)}
+
+  #printArea{display:none;font-family:var(--sans);color:#1a1a1a;line-height:1.4}
+  #printArea .p-head{display:flex;align-items:baseline;gap:10px;border-bottom:2px solid var(--teal);padding-bottom:6px;margin-bottom:8px}
+  #printArea .p-brand{font-weight:700;font-size:22px;color:var(--teal)}
+  #printArea .p-title{font-weight:600;font-size:14px}
+  #printArea .p-date{margin-left:auto;font-family:var(--mono);font-size:12px;color:#666}
+  #printArea .p-water{font-family:var(--mono);font-size:12px;margin-bottom:6px}
+  #printArea .p-amasado{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--wood);margin:12px 0 5px;font-weight:700}
+  #printArea .p-masa{border:1px solid #ccc;border-radius:7px;padding:8px 10px;margin-bottom:8px;page-break-inside:avoid;break-inside:avoid}
+  #printArea .p-mh{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;font-size:14px;margin-bottom:4px}
+  #printArea .p-mt{font-family:var(--mono);color:var(--teal)}
+  #printArea .p-row{font-size:12px;line-height:1.5;margin:2px 0}
+  #printArea .p-lbl{font-weight:600;color:#555}
+  #printArea .p-grand{display:flex;justify-content:space-between;border-top:2px solid var(--teal);margin-top:10px;padding-top:7px;font-weight:700;font-size:14px}
+  #printArea .p-grand .pv{font-family:var(--mono);color:var(--teal)}
+  #printArea .p-empty{font-size:13px;color:#666;padding:20px 0}
+  @media print{
+    body{background:#fff !important;padding:0;margin:0}
+    body>.wrap{display:none !important}
+    #printArea{display:block !important}
+    @page{margin:12mm}
+  }
 </style>
 </head>
 <body>
@@ -244,14 +269,15 @@
         <div class="res-line" id="g1row" style="display:none"><div class="name">1° amasado</div><div class="val" id="grand1">0 g</div></div>
         <div class="res-line" id="g2row" style="display:none"><div class="name">2° amasado</div><div class="val" id="grand2">0 g</div></div>
         <div class="grand"><div class="name">Masa total de la tanda</div><div class="val" id="grandMasa">0 g</div></div>
+        <button class="printbtn" id="printBtn">Imprimir / Guardar PDF</button>
       </div>
     </div>
   </div>
 
   <div class="footer">
     <div class="footer-tools">
-      <button class="linkbtn" id="exportBtn">Exportar datos</button>
-      <button class="linkbtn" id="importBtn">Importar datos</button>
+      <button class="linkbtn" id="exportBtn">Copia de seguridad (datos)</button>
+      <button class="linkbtn" id="importBtn">Restaurar copia</button>
       <button class="linkbtn faint" id="resetBtn">Restaurar valores de fábrica</button>
     </div>
     <div class="io-panel" id="ioPanel">
@@ -264,6 +290,7 @@
     </div>
   </div>
 </div>
+<div id="printArea"></div>
 
 <script>
 (function(){
@@ -576,6 +603,50 @@
   function flushSave(){ if(ready&&storageOK){ clearTimeout(saveT); persist(); } }
   document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="hidden") flushSave(); });
   window.addEventListener("pagehide",flushSave);
+
+  // imprimir / guardar planificación (PDF) — hoja limpia del día
+  function planMasa(r, qf, cobf, sh){
+    var preTotal=r.pre?r.pre.ings.reduce(function(a,x){return a+(x.grams||0)},0):0;
+    var mainTotal=r.ings.reduce(function(a,x){return a+(x.grams||0)},0);
+    var refTotal=preTotal+mainTotal;
+    var D=r.vars.reduce(function(a,v){return a+((+v[qf]||0)*(v.w||0))},0)+(+r[cobf]||0);
+    var factor=(D>0&&refTotal>0)?(D/refTotal):0;
+    var pre=(factor&&r.pre)?r.pre.ings.map(function(x){return {name:x.name,v:x.grams*factor};}):null;
+    var ings=factor?r.ings.map(function(x){return {name:x.name,v:x.grams*factor};}):[];
+    var seedsDry=r.vars.reduce(function(a,v){return a+((+v[qf]||0)*(v.s||0))},0);
+    var divs=[]; r.vars.forEach(function(v){ var qv=+v[qf]||0; if(qv>0&&(v.w||0)>0) divs.push({name:v.name,q:qv,w:v.w,s:v.s||0}); });
+    return {D:D, pre:pre, ings:ings, seedsDry:seedsDry, seedsWater:seedsDry*sh/100, cob:+r[cobf]||0, divs:divs};
+  }
+  function buildPrintHTML(){
+    var sh=num($("seedHyd"));
+    var ams=[{qf:"q",cobf:"cob",label:"1° amasado",a2:false},{qf:"q2",cobf:"cob2",label:"2° amasado",a2:true}];
+    function masasOf(A){ return recipes.filter(function(r){ if(A.a2 && !r.a2) return false; return planMasa(r,A.qf,A.cobf,sh).D>0.5; }); }
+    var a1=masasOf(ams[0]), a2=masasOf(ams[1]), twoB=a2.length>0, grand=0, html="";
+    html+='<div class="p-head"><div class="p-brand">fika</div><div class="p-title">Planificación de producción</div><div class="p-date">'+esc(new Date().toLocaleDateString("es-AR"))+'</div></div>';
+    var wt=$("waterTemp").textContent; if(wt && wt!=="—") html+='<div class="p-water">Temperatura del agua: <b>'+esc(wt)+' °C</b></div>';
+    function render(list,A){
+      list.forEach(function(r){
+        var p=planMasa(r,A.qf,A.cobf,sh); grand+=p.D;
+        html+='<div class="p-masa"><div class="p-mh"><span>'+esc(r.label)+'</span><span class="p-mt">'+g(p.D)+'</span></div>';
+        if(p.pre){ var pl=p.pre.filter(function(it){return it.v>0.5;}).map(function(it){return esc(it.name)+' '+g(it.v);}).join(' · '); if(pl) html+='<div class="p-row"><span class="p-lbl">'+esc(r.pre.label)+' (aparte):</span> '+pl+'</div>'; }
+        var il=p.ings.filter(function(it){return it.v>0.5;}).map(function(it){return esc(it.name)+' '+g(it.v);}).join(' · ');
+        if(il) html+='<div class="p-row"><span class="p-lbl">Pesar:</span> '+il+'</div>';
+        if(p.seedsDry>0.5) html+='<div class="p-row"><span class="p-lbl">Semillas:</span> '+g(p.seedsDry)+' en seco + '+g(p.seedsWater)+' agua de remojo ('+sh+'%)</div>';
+        var dl=p.divs.map(function(d){ var sd=d.s>0?' (sem '+Math.round(d.q*d.s*(1+sh/100))+' g)':''; return esc(d.name)+' '+d.q+'×'+d.w+' g'+sd; }).join(' · ');
+        if(dl) html+='<div class="p-row"><span class="p-lbl">Cortar:</span> '+dl+'</div>';
+        if(p.cob>0.5) html+='<div class="p-row"><span class="p-lbl">Cobertura:</span> '+g(p.cob)+' (masa de más)</div>';
+        html+='</div>';
+      });
+    }
+    if(twoB) html+='<div class="p-amasado">'+ams[0].label+'</div>';
+    render(a1,ams[0]);
+    if(twoB){ html+='<div class="p-amasado">'+ams[1].label+'</div>'; render(a2,ams[1]); }
+    html+='<div class="p-grand"><span>Masa total de la tanda</span><span class="pv">'+g(grand)+'</span></div>';
+    if(!a1.length && !a2.length) html='<div class="p-head"><div class="p-brand">fika</div><div class="p-title">Planificación de producción</div></div><div class="p-empty">Todavía no cargaste producción. Cargá cantidades y volvé a tocar "Imprimir".</div>';
+    return html;
+  }
+  function printPlan(){ $("printArea").innerHTML=buildPrintHTML(); window.print(); }
+  $("printBtn").addEventListener("click",printPlan);
 
   // exportar / importar / restaurar
   function showIO(text, msg){ $("ioText").value=text||""; $("ioMsg").textContent=msg||""; $("ioPanel").style.display="block"; }
