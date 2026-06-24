@@ -74,6 +74,14 @@
   .cobfield{font-family:var(--mono);font-size:13px;color:var(--teal);white-space:nowrap;flex:0 0 auto}
   .cobin{width:64px;font-family:var(--mono);font-size:14px;color:var(--teal-deep);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 6px;text-align:right;outline:none}
   .cobin:focus{border-color:var(--teal)}
+  .amasado-label{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--wood);font-weight:600;margin:2px 2px 12px}
+  .a2-head{display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none;-webkit-user-select:none;margin:24px 0 0;padding-top:18px;border-top:1px solid var(--line)}
+  .a2-head .chev{font-size:10px;color:var(--wood);flex:0 0 auto;width:12px;text-align:center}
+  .a2-head .a2-title{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--wood);font-weight:600}
+  .a2-body{margin-top:14px}
+  .a2-body .a2add{margin-top:0}
+  .rema2btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:0 0 0 6px;flex:0 0 auto}
+  .rema2btn:hover{color:var(--danger)}
   .dayhead{display:grid;grid-template-columns:1fr 88px 92px 24px;gap:8px;font-family:var(--mono);font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;padding:0 2px}
   .dayhead span:nth-child(n+2){text-align:right}
   .dayrow{display:grid;grid-template-columns:1fr 88px 92px 24px;gap:8px;align-items:center;margin-bottom:8px}
@@ -212,8 +220,10 @@
 
   <div class="grid planner">
     <div>
+      <div class="amasado-label">1° amasado</div>
       <div id="masaBlocks"></div>
       <button class="addrecipe" id="addRecipe">+ Agregar masa / receta</button>
+      <div id="amasado2"></div>
     </div>
     <div>
       <div class="card amasado">
@@ -231,6 +241,8 @@
         <h2>Resumen de la tanda</h2>
         <div class="seedset"><label for="seedHyd">Hidratación de semillas</label><input id="seedHyd" type="number" value="90" min="0" step="5"><span class="pct">%</span></div>
         <p class="note">El detalle de ingredientes y la división al cortar de cada masa aparecen dentro de su bloque, al desplegarla.</p>
+        <div class="res-line" id="g1row" style="display:none"><div class="name">1° amasado</div><div class="val" id="grand1">0 g</div></div>
+        <div class="res-line" id="g2row" style="display:none"><div class="name">2° amasado</div><div class="val" id="grand2">0 g</div></div>
         <div class="grand"><div class="name">Masa total de la tanda</div><div class="val" id="grandMasa">0 g</div></div>
       </div>
     </div>
@@ -277,16 +289,18 @@
   function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
   function escA(s){return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");}
   function find(k){for(var i=0;i<recipes.length;i++){if(recipes[i].key===k)return recipes[i];}return null;}
-  function migrate(){ recipes.forEach(function(r){ if(!("pre" in r)) r.pre=null; if(!("dayOpen" in r)) r.dayOpen=false; if(!("cob" in r)) r.cob=0; (r.vars||[]).forEach(function(v){ if(v.s===undefined) v.s=0; }); }); }
-  var forceShown={}; // variedades agregadas a la tanda que siguen en 0 (clave "masa:indice"; no se persiste)
+  function migrate(){ recipes.forEach(function(r){ if(!("pre" in r)) r.pre=null; if(!("dayOpen" in r)) r.dayOpen=false; if(!("cob" in r)) r.cob=0; if(!("dayOpen2" in r)) r.dayOpen2=false; if(!("cob2" in r)) r.cob2=0; if(!("a2" in r)) r.a2=false; (r.vars||[]).forEach(function(v){ if(v.s===undefined) v.s=0; if(v.q2===undefined) v.q2=0; }); }); }
+  var forceShown={}; // variedades agregadas a la tanda (1° amasado) que siguen en 0 (clave "masa:indice"; no se persiste)
+  var forceShown2={}; // idem para el 2° amasado
+  var a2open=false; // sección "2° amasado" desplegada
 
   var KEY="fika_masas_v2", saveT, flashT, ready=false;
   var storageOK=(function(){try{localStorage.setItem("__fk","1");localStorage.removeItem("__fk");return true;}catch(e){return false;}})();
   function flashSaved(){var el=$("saveState"); if(!el)return; el.textContent="Guardado \u2713"; el.style.color="var(--good)"; clearTimeout(flashT); flashT=setTimeout(function(){el.textContent="Guardado automático en este navegador"; el.style.color="";},1200);}
-  function snapshot(){ return {recipes:recipes, water:{ambient:$("ambient").value, ddt:$("ddt").value, ff:$("ff").value}, seedHyd:$("seedHyd").value}; }
+  function snapshot(){ return {recipes:recipes, water:{ambient:$("ambient").value, ddt:$("ddt").value, ff:$("ff").value}, seedHyd:$("seedHyd").value, a2open:a2open}; }
   function persist(){ if(!storageOK) return; try{ localStorage.setItem(KEY, JSON.stringify(snapshot())); flashSaved(); }catch(e){} }
   function scheduleSave(){ if(!ready) return; clearTimeout(saveT); saveT=setTimeout(persist,400); }
-  function applyData(d){ if(d&&Array.isArray(d.recipes)&&d.recipes.length){ recipes=d.recipes; migrate(); } if(d&&d.water){ ["ambient","ddt","ff"].forEach(function(k){ if(d.water[k]!==undefined && $(k)) $(k).value=d.water[k]; }); } if(d&&d.seedHyd!==undefined && $("seedHyd")) $("seedHyd").value=d.seedHyd; }
+  function applyData(d){ if(d&&Array.isArray(d.recipes)&&d.recipes.length){ recipes=d.recipes; migrate(); } if(d&&d.water){ ["ambient","ddt","ff"].forEach(function(k){ if(d.water[k]!==undefined && $(k)) $(k).value=d.water[k]; }); } if(d&&d.seedHyd!==undefined && $("seedHyd")) $("seedHyd").value=d.seedHyd; if(d&&d.a2open!==undefined) a2open=!!d.a2open; }
   function loadState(){ if(!storageOK) return; try{ var raw=localStorage.getItem(KEY); if(!raw) return; applyData(JSON.parse(raw)); }catch(e){} }
 
   function ingRows(r,arr,sec){
@@ -367,7 +381,76 @@
       : '')+
       '</div>';
   }
-  function rebuild(){ $("masaBlocks").innerHTML=recipes.map(blockHtml).join(""); recompute(); }
+  function block2Html(r){
+    var dayRows="", inactiveOpts="";
+    r.vars.forEach(function(v,i){
+      var qv=+v.q2||0;
+      if(qv>0 || forceShown2[r.key+":"+i]){
+        dayRows+='<div class="dayrow">'+
+          '<div class="dname">'+esc(v.name)+'<small>'+(v.w||0)+' g c/u'+((v.s||0)>0?' · '+v.s+' g sem seco':'')+'</small></div>'+
+          '<span class="vl vl-dq">Cantidad a producir</span>'+
+          '<input type="number" min="0" step="1" value="'+qv+'" data-r="'+r.key+'" data-var="'+i+'" data-f="q2">'+
+          '<div class="masa" id="vmasa2-'+r.key+'-'+i+'">0 g</div>'+
+          '<button class="del" data-delday="'+r.key+'" data-i="'+i+'" data-am="2" title="Quitar de la tanda">&times;</button></div>';
+      } else { inactiveOpts+='<option value="'+i+'">'+esc(v.name)+'</option>'; }
+    });
+    var selector = inactiveOpts ? '<select class="dayadd" data-dayadd="'+r.key+'" data-am="2"><option value="">+ agregar variedad a la tanda</option>'+inactiveOpts+'</select>' : '';
+    var dayBody=(dayRows||'<div class="empty">Ninguna variedad cargada para hoy.</div>')+selector;
+    return '<div class="masa-block'+(r.dayOpen2?' open':'')+'">'+
+      '<div class="masa-head" data-day2="'+r.key+'">'+
+        '<div class="masa-title"><span class="chev">'+(r.dayOpen2?'▾':'▸')+'</span><span class="masa-name">'+esc(r.label)+'</span></div>'+
+        '<div class="head-right"><span class="masa-sum" id="vsub2-'+r.key+'">0 g</span><button class="rema2btn" data-rema2="'+r.key+'" title="Quitar del 2° amasado">&times;</button></div></div>'+
+      (r.dayOpen2 ?
+        '<div class="day-section">'+
+          '<div class="day-top"><span class="sectlabel">A producir · 2° amasado</span></div>'+
+          '<div class="dayhead"><span>Variedad</span><span>Cantidad</span><span>Masa</span><span></span></div>'+
+          dayBody+
+          '<div class="cobrow"><span class="coblabel">Cobertura <small>masa de más, por las dudas</small></span><span class="cobfield"><input type="number" min="0" step="50" value="'+(+r.cob2||0)+'" data-r="'+r.key+'" data-f="cob2" class="cobin"> g</span></div>'+
+          '<div class="weigh" id="weigh2-'+r.key+'"></div>'+
+        '</div>'
+      : '')+
+      '</div>';
+  }
+  function render2(){
+    var host=$("amasado2"); if(!host) return;
+    var html='<div class="a2-head"><span class="chev">'+(a2open?'▾':'▸')+'</span><span class="a2-title">2° amasado</span></div>';
+    if(a2open){
+      var inA2=recipes.filter(function(r){return r.a2;});
+      html+='<div class="a2-body">';
+      html+= inA2.length ? inA2.map(block2Html).join("") : '<div class="empty">Sumá una masa para el 2° amasado.</div>';
+      var opts=""; recipes.forEach(function(r){ if(!r.a2) opts+='<option value="'+r.key+'">'+esc(r.label)+'</option>'; });
+      if(opts) html+='<select class="dayadd a2add" data-a2add="1"><option value="">+ agregar masa al 2° amasado</option>'+opts+'</select>';
+      html+='</div>';
+    }
+    host.innerHTML=html;
+  }
+  function computeMasa2(r){
+    var preTotal=r.pre?r.pre.ings.reduce(function(a,x){return a+(x.grams||0)},0):0;
+    var mainTotal=r.ings.reduce(function(a,x){return a+(x.grams||0)},0);
+    var refTotal=preTotal+mainTotal;
+    var D=r.vars.reduce(function(a,v){return a+((+v.q2||0)*(v.w||0))},0)+(+r.cob2||0);
+    r.vars.forEach(function(v,i){var e=$("vmasa2-"+r.key+"-"+i); if(e) e.textContent=g((+v.q2||0)*(v.w||0));});
+    var sub=$("vsub2-"+r.key); if(sub) sub.textContent=g(D);
+    var we=$("weigh2-"+r.key);
+    if(we){
+      var factor=(D>0&&refTotal>0)?(D/refTotal):null;
+      if(!factor){ we.innerHTML='<div class="empty">Cargá cantidades arriba para ver los ingredientes a pesar.</div>'; }
+      else {
+        var html='<div class="sectlabel weigh-label">Ingredientes a pesar</div>';
+        if(r.pre){ html+='<div class="res-preblock"><div class="res-prelabel">'+esc(r.pre.label)+' · aparte</div>'; r.pre.ings.forEach(function(x){var v=x.grams*factor; if(v>0.5) html+='<div class="res-line"><div class="name">'+esc(x.name)+'</div><div class="val">'+g(v)+'</div></div>';}); html+='</div>'; }
+        r.ings.forEach(function(x){var v=x.grams*factor; if(v>0.5) html+='<div class="res-line"><div class="name">'+esc(x.name)+'</div><div class="val">'+g(v)+'</div></div>';});
+        html+='<div class="res-masatotal"><div class="name">Masa total</div><div class="val">'+g(D)+'</div></div>';
+        var seeds=r.vars.reduce(function(a,v){return a+((+v.q2||0)*(v.s||0))},0);
+        if(seeds>0.5){ var sh=num($("seedHyd")); var dry=seeds,wat=dry*sh/100,hyd=dry+wat; html+='<div class="res-line seeds"><div class="name">Semillas (en seco) a pesar</div><div class="val">'+g(dry)+'</div></div>'+'<div class="res-line seeds"><div class="name">Agua de remojo <small>('+sh+'%)</small></div><div class="val">'+g(wat)+'</div></div>'+'<div class="res-line seeds"><div class="name">&rarr; semillas hidratadas</div><div class="val">'+g(hyd)+'</div></div>'; }
+        var divs=r.vars.filter(function(v){return (+v.q2||0)>0 && (v.w||0)>0;});
+        var cob=+r.cob2||0;
+        if(divs.length||cob>0.5){ html+='<div class="res-divlabel">División al cortar · masa por variedad</div>'; divs.forEach(function(v){ var qv=+v.q2||0; var sd=(v.s>0)?' · sem hidratadas '+Math.round(qv*v.s*(1+num($("seedHyd"))/100))+' g':''; html+='<div class="res-div"><div class="name">'+esc(v.name)+'<small>'+qv+' × '+v.w+' g'+sd+'</small></div><div class="val">'+g(qv*v.w)+'</div></div>'; }); if(cob>0.5) html+='<div class="res-div"><div class="name">Cobertura<small>masa de más, sin cortar</small></div><div class="val">'+g(cob)+'</div></div>'; }
+        we.innerHTML=html;
+      }
+    }
+    return D;
+  }
+  function rebuild(){ $("masaBlocks").innerHTML=recipes.map(blockHtml).join(""); render2(); recompute(); }
 
   function recompute(){
     var grand=0;
@@ -388,8 +471,6 @@
       r._pre=(factor&&r.pre)?r.pre.ings.map(function(x){return {name:x.name,v:x.grams*factor}}):null;
       r._w=factor?r.ings.map(function(x){return {name:x.name,v:x.grams*factor}}):null;
     });
-    $("grandMasa").textContent=g(grand);
-
     recipes.forEach(function(r){
       var we=$("weigh-"+r.key); if(!we) return; // solo las masas expandidas tienen contenedor
       if(!r._w){ we.innerHTML='<div class="empty">Cargá cantidades arriba para ver los ingredientes a pesar.</div>'; return; }
@@ -414,6 +495,13 @@
       }
       we.innerHTML=html;
     });
+    var grand2=0;
+    recipes.forEach(function(r){ if(r.a2) grand2+=computeMasa2(r); });
+    var g1=$("grand1"), g2=$("grand2"), r1=$("g1row"), r2=$("g2row");
+    var showBreak = a2open && grand2>0.5;
+    if(g1) g1.textContent=g(grand); if(g2) g2.textContent=g(grand2);
+    if(r1) r1.style.display=showBreak?"":"none"; if(r2) r2.style.display=showBreak?"":"none";
+    $("grandMasa").textContent=g(grand+grand2);
     scheduleSave();
   }
 
@@ -424,12 +512,11 @@
     scheduleSave();
   }
 
-  var blocks=$("masaBlocks");
-  blocks.addEventListener("input",function(e){
+  function onInput(e){
     var t=e.target; if(t.tagName!=="INPUT") return;
     var r=find(t.dataset.r); if(!r) return; var f=t.dataset.f;
     if(f==="prelabel"){ if(r.pre) r.pre.label=t.value; recompute(); return; }
-    if(f==="cob"){ r.cob=parseFloat(t.value)||0; recompute(); return; }
+    if(f==="cob"||f==="cob2"){ r[f]=parseFloat(t.value)||0; recompute(); return; }
     if(f==="hyd"){
       var hyd=parseFloat(t.value); if(isNaN(hyd)) return; if(hyd<0) hyd=0;
       var flourT=0, allI=(r.pre?r.pre.ings:[]).concat(r.ings);
@@ -445,27 +532,42 @@
       r.vars[+t.dataset.var][f] = (f==="name")?t.value:(parseFloat(t.value)||0);
     } else { r[f]=t.value; }
     recompute();
-  });
-  blocks.addEventListener("click",function(e){
+  }
+  function onClick(e){
+    var b=e.target.closest("button");
+    if(b){ var r;
+      if(b.dataset.rema2!==undefined){ r=find(b.dataset.rema2); if(r) r.a2=false; rebuild(); return; }
+      if(b.dataset.toggle!==undefined){ r=find(b.dataset.toggle); r.open=!r.open; rebuild(); return; }
+      if(b.dataset.delday!==undefined){ r=find(b.dataset.delday); var n2=(b.dataset.am==="2"); var dv=r.vars[+b.dataset.i]; if(dv){ dv[n2?"q2":"q"]=0; } var fmd=n2?forceShown2:forceShown; delete fmd[b.dataset.delday+":"+b.dataset.i]; rebuild(); return; }
+      if(b.dataset.addvar!==undefined){ r=find(b.dataset.addvar); var nv={name:"Nueva variedad",w:800,q:0,s:0,q2:0}; r.vars.push(nv); forceShown[b.dataset.addvar+":"+(r.vars.length-1)]=true; rebuild(); return; }
+      if(b.dataset.delvar!==undefined){ find(b.dataset.delvar).vars.splice(+b.dataset.i,1); forceShown={}; forceShown2={}; rebuild(); return; }
+      if(b.dataset.adding!==undefined){ r=find(b.dataset.adding); (b.dataset.sec==="pre"&&r.pre?r.pre.ings:r.ings).push({name:"",grams:0}); rebuild(); return; }
+      if(b.dataset.deling!==undefined){ r=find(b.dataset.deling); (b.dataset.sec==="pre"&&r.pre?r.pre.ings:r.ings).splice(+b.dataset.i,1); rebuild(); return; }
+      if(b.dataset.addpre!==undefined){ r=find(b.dataset.addpre); r.pre={label:"Poolish",ings:[{name:"Harina 000",grams:0},{name:"Agua",grams:0},{name:"Levadura",grams:0}]}; r.open=true; rebuild(); return; }
+      if(b.dataset.delpre!==undefined){ find(b.dataset.delpre).pre=null; rebuild(); return; }
+      if(b.dataset.delr!==undefined){ recipes=recipes.filter(function(x){return x.key!==b.dataset.delr}); forceShown={}; forceShown2={}; rebuild(); return; }
+      return;
+    }
     var head=e.target.closest(".masa-head");
-    if(head && head.dataset.day!==undefined){ var rh=find(head.dataset.day); if(rh){ rh.dayOpen=!rh.dayOpen; rebuild(); } return; }
-    var b=e.target.closest("button"); if(!b) return; var r;
-    if(b.dataset.toggle!==undefined){ r=find(b.dataset.toggle); r.open=!r.open; rebuild(); }
-    else if(b.dataset.delday!==undefined){ r=find(b.dataset.delday); var dv=r.vars[+b.dataset.i]; if(dv){ dv.q=0; } delete forceShown[b.dataset.delday+":"+b.dataset.i]; rebuild(); }
-    else if(b.dataset.addvar!==undefined){ r=find(b.dataset.addvar); var nv={name:"Nueva variedad",w:800,q:0,s:0}; r.vars.push(nv); forceShown[b.dataset.addvar+":"+(r.vars.length-1)]=true; rebuild(); }
-    else if(b.dataset.delvar!==undefined){ find(b.dataset.delvar).vars.splice(+b.dataset.i,1); forceShown={}; rebuild(); }
-    else if(b.dataset.adding!==undefined){ r=find(b.dataset.adding); (b.dataset.sec==="pre"&&r.pre?r.pre.ings:r.ings).push({name:"",grams:0}); rebuild(); }
-    else if(b.dataset.deling!==undefined){ r=find(b.dataset.deling); (b.dataset.sec==="pre"&&r.pre?r.pre.ings:r.ings).splice(+b.dataset.i,1); rebuild(); }
-    else if(b.dataset.addpre!==undefined){ r=find(b.dataset.addpre); r.pre={label:"Poolish",ings:[{name:"Harina 000",grams:0},{name:"Agua",grams:0},{name:"Levadura",grams:0}]}; r.open=true; rebuild(); }
-    else if(b.dataset.delpre!==undefined){ find(b.dataset.delpre).pre=null; rebuild(); }
-    else if(b.dataset.delr!==undefined){ recipes=recipes.filter(function(x){return x.key!==b.dataset.delr}); forceShown={}; rebuild(); }
-  });
-  blocks.addEventListener("change",function(e){
-    var t=e.target; if(t.tagName!=="SELECT" || t.dataset.dayadd===undefined) return;
-    var r=find(t.dataset.dayadd); if(!r) return;
-    var idx=parseInt(t.value,10);
-    if(!isNaN(idx) && r.vars[idx]){ forceShown[t.dataset.dayadd+":"+idx]=true; rebuild(); }
-  });
+    if(head){
+      if(head.dataset.day!==undefined){ var r1=find(head.dataset.day); if(r1){ r1.dayOpen=!r1.dayOpen; rebuild(); } return; }
+      if(head.dataset.day2!==undefined){ var r2=find(head.dataset.day2); if(r2){ r2.dayOpen2=!r2.dayOpen2; rebuild(); } return; }
+      return;
+    }
+    if(e.target.closest(".a2-head")){ a2open=!a2open; rebuild(); return; }
+  }
+  function onChange(e){
+    var t=e.target; if(t.tagName!=="SELECT") return;
+    if(t.dataset.a2add!==undefined){ var rk=t.value; if(rk){ var rr=find(rk); if(rr){ rr.a2=true; rr.dayOpen2=true; rebuild(); } } return; }
+    if(t.dataset.dayadd!==undefined){
+      var r=find(t.dataset.dayadd); if(!r) return;
+      var idx=parseInt(t.value,10); var fmc=(t.dataset.am==="2")?forceShown2:forceShown;
+      if(!isNaN(idx) && r.vars[idx]){ fmc[t.dataset.dayadd+":"+idx]=true; rebuild(); }
+      return;
+    }
+  }
+  var blocks=$("masaBlocks"), blocks2=$("amasado2");
+  [blocks, blocks2].forEach(function(el){ if(el){ el.addEventListener("input",onInput); el.addEventListener("click",onClick); el.addEventListener("change",onChange); } });
   $("addRecipe").addEventListener("click",function(){
     recipes.push({key:"r"+Date.now(), label:"Nueva masa", open:true, dayOpen:true, pre:null,
       ings:[{name:"Harina 000",grams:1000},{name:"Agua",grams:650},{name:"Sal",grams:20}],
