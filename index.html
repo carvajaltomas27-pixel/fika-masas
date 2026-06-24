@@ -68,6 +68,12 @@
   .hydwrap{font-family:var(--mono);font-size:11px;color:var(--teal);white-space:nowrap}
   .hydin{width:40px;font-family:var(--mono);font-size:11px;color:var(--teal);background:var(--surface2);border:1px solid var(--line);border-radius:6px;padding:2px 4px;text-align:right;outline:none}
   .hydin:focus{border-color:var(--teal);background:var(--surface)}
+  .cobrow{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px;padding:9px 11px;background:var(--surface2);border:1px dashed var(--line);border-radius:8px}
+  .cobrow .coblabel{min-width:0;display:flex;flex-direction:column;line-height:1.2;font-size:13px;font-weight:600;color:var(--text)}
+  .cobrow .coblabel small{font-family:var(--mono);font-size:10px;color:var(--muted);font-weight:400;margin-top:2px}
+  .cobfield{font-family:var(--mono);font-size:13px;color:var(--teal);white-space:nowrap;flex:0 0 auto}
+  .cobin{width:64px;font-family:var(--mono);font-size:14px;color:var(--teal-deep);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 6px;text-align:right;outline:none}
+  .cobin:focus{border-color:var(--teal)}
   .dayhead{display:grid;grid-template-columns:1fr 88px 92px 24px;gap:8px;font-family:var(--mono);font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;padding:0 2px}
   .dayhead span:nth-child(n+2){text-align:right}
   .dayrow{display:grid;grid-template-columns:1fr 88px 92px 24px;gap:8px;align-items:center;margin-bottom:8px}
@@ -186,6 +192,7 @@
     .ingrow{grid-template-columns:1fr 72px 24px}
     .ingrow input,.amasado input,.masa-name-input,.prelabel-input,.seedset input{font-size:16px}
     .hydin{font-size:16px;width:46px}
+    .cobin{font-size:16px;width:74px}
     .water-out .big{font-size:36px}
   }
 </style>
@@ -270,7 +277,7 @@
   function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
   function escA(s){return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");}
   function find(k){for(var i=0;i<recipes.length;i++){if(recipes[i].key===k)return recipes[i];}return null;}
-  function migrate(){ recipes.forEach(function(r){ if(!("pre" in r)) r.pre=null; if(!("dayOpen" in r)) r.dayOpen=false; (r.vars||[]).forEach(function(v){ if(v.s===undefined) v.s=0; }); }); }
+  function migrate(){ recipes.forEach(function(r){ if(!("pre" in r)) r.pre=null; if(!("dayOpen" in r)) r.dayOpen=false; if(!("cob" in r)) r.cob=0; (r.vars||[]).forEach(function(v){ if(v.s===undefined) v.s=0; }); }); }
   var forceShown={}; // variedades agregadas a la tanda que siguen en 0 (clave "masa:indice"; no se persiste)
 
   var KEY="fika_masas_v2", saveT, flashT, ready=false;
@@ -343,6 +350,7 @@
           '<div class="day-top"><span class="sectlabel">A producir hoy</span><span class="hydwrap" id="hydwrap-'+r.key+'" style="display:none">hidratación <input class="hydin" type="number" min="0" step="1" data-r="'+r.key+'" data-f="hyd" id="hyd-'+r.key+'"> %</span></div>'+
           '<div class="dayhead"><span>Variedad</span><span>Cantidad</span><span>Masa</span><span></span></div>'+
           dayBody+
+          '<div class="cobrow"><span class="coblabel">Cobertura <small>masa de más, por las dudas</small></span><span class="cobfield"><input type="number" min="0" step="50" value="'+(+r.cob||0)+'" data-r="'+r.key+'" data-f="cob" class="cobin"> g</span></div>'+
           '<div class="weigh" id="weigh-'+r.key+'"></div>'+
           '<button class="editcat'+(r.open?' on':'')+'" data-toggle="'+r.key+'">'+(r.open?'✕ Cerrar edición':'✎ Editar variedades y receta')+'</button>'+
           '<div class="receta'+(r.open?'':' hidden')+'">'+
@@ -367,7 +375,7 @@
       var preTotal = r.pre? r.pre.ings.reduce(function(a,x){return a+(x.grams||0)},0) : 0;
       var mainTotal = r.ings.reduce(function(a,x){return a+(x.grams||0)},0);
       var refTotal = preTotal+mainTotal;
-      var D=r.vars.reduce(function(a,v){return a+((v.q||0)*(v.w||0))},0);
+      var D=r.vars.reduce(function(a,v){return a+((v.q||0)*(v.w||0))},0)+(+r.cob||0);
       r.vars.forEach(function(v,i){var t=g((v.q||0)*(v.w||0)); var e1=$("vmasa-"+r.key+"-"+i); if(e1) e1.textContent=t; var e2=$("cmasa-"+r.key+"-"+i); if(e2) e2.textContent=t;});
       var sub=$("vsub-"+r.key); if(sub) sub.textContent=g(D);
       var flour=0,water=0, all=(r.pre?r.pre.ings:[]).concat(r.ings);
@@ -395,12 +403,14 @@
       html+='<div class="res-masatotal"><div class="name">Masa total</div><div class="val">'+g(r._D)+'</div></div>';
       if(r._seeds>0.5){ var sh=num($("seedHyd")); var dry=r._seeds; var wat=dry*sh/100; var hyd=dry+wat; html+='<div class="res-line seeds"><div class="name">Semillas (en seco) a pesar</div><div class="val">'+g(dry)+'</div></div>'+'<div class="res-line seeds"><div class="name">Agua de remojo <small>('+sh+'%)</small></div><div class="val">'+g(wat)+'</div></div>'+'<div class="res-line seeds"><div class="name">&rarr; semillas hidratadas</div><div class="val">'+g(hyd)+'</div></div>'; }
       var divs=r.vars.filter(function(v){return (v.q||0)>0 && (v.w||0)>0;});
-      if(divs.length){
+      var cob=+r.cob||0;
+      if(divs.length || cob>0.5){
         html+='<div class="res-divlabel">División al cortar · masa por variedad</div>';
         divs.forEach(function(v){
           var sd=(v.s>0)?' · sem hidratadas '+Math.round(v.q*v.s*(1+num($("seedHyd"))/100))+' g':'';
           html+='<div class="res-div"><div class="name">'+esc(v.name)+'<small>'+v.q+' × '+v.w+' g'+sd+'</small></div><div class="val">'+g(v.q*v.w)+'</div></div>';
         });
+        if(cob>0.5) html+='<div class="res-div"><div class="name">Cobertura<small>masa de más, sin cortar</small></div><div class="val">'+g(cob)+'</div></div>';
       }
       we.innerHTML=html;
     });
@@ -419,6 +429,7 @@
     var t=e.target; if(t.tagName!=="INPUT") return;
     var r=find(t.dataset.r); if(!r) return; var f=t.dataset.f;
     if(f==="prelabel"){ if(r.pre) r.pre.label=t.value; recompute(); return; }
+    if(f==="cob"){ r.cob=parseFloat(t.value)||0; recompute(); return; }
     if(f==="hyd"){
       var hyd=parseFloat(t.value); if(isNaN(hyd)) return; if(hyd<0) hyd=0;
       var flourT=0, allI=(r.pre?r.pre.ings:[]).concat(r.ings);
