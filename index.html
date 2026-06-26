@@ -358,7 +358,7 @@
   var recipes = [
     {key:"semi", label:"Semi-integral", open:false, pre:null,
       ings:[{name:"Masa madre",grams:109},{name:"Harina 000",grams:256},{name:"Harina integral",grams:256},{name:"Agua",grams:374},{name:"Sal",grams:10}],
-      vars:[{name:"Hogaza de Campo",w:840,q:0,s:0},{name:"Pan semillas",w:800,q:0,s:21},{name:"Tostada semi-integral",w:2000,q:0,s:0},{name:"Barra de semillas",w:1800,q:0,s:105}]},
+      vars:[{name:"Hogaza de Campo",w:840,q:0,s:0},{name:"Pan semillas",w:735,q:0,s:60},{name:"Tostada semi-integral",w:2000,q:0,s:0},{name:"Barra de semillas",w:1800,q:0,s:105}]},
     {key:"integral", label:"100% integral", open:false, pre:null,
       ings:[{name:"Masa madre",grams:100},{name:"Harina integral",grams:503},{name:"Agua",grams:387},{name:"Sal",grams:10}],
       vars:[{name:"Hogaza Común",w:840,q:0,s:0}]},
@@ -383,7 +383,7 @@
   var a2open=false; // sección "2° amasado" desplegada
 
   var KEY="fika_masas_v2", saveT, flashT, ready=false;
-  var MASTER_VERSION=1;            // subir este número al publicar una corrección de recetas: las copias viejas de cada celular se actualizan al refrescar
+  var MASTER_VERSION=2;            // subir este número al publicar una corrección de recetas: las copias viejas de cada celular se actualizan al refrescar  (v2: pan de semillas 735 g masa + 60 g semillas)
   var PRODKEY=KEY+"_prod";         // producción del día: se guarda aparte (con fecha) y arranca en cero cada día
   var storageOK=(function(){try{localStorage.setItem("__fk","1");localStorage.removeItem("__fk");return true;}catch(e){return false;}})();
   function flashSaved(){var el=$("saveState"); if(!el)return; el.textContent="Guardado \u2713"; el.style.color="var(--good)"; clearTimeout(flashT); flashT=setTimeout(function(){el.textContent="Recetas guardadas en este navegador"; el.style.color="";},1200);}
@@ -395,7 +395,7 @@
   function clearProduction(){ for(var i=0;i<recipes.length;i++){ var vs=recipes[i].vars||[]; for(var j=0;j<vs.length;j++){ vs[j].q=0; vs[j].q2=0; } } if(storageOK){ try{ localStorage.removeItem(PRODKEY); }catch(e){} } rebuild(); }
   function scheduleSave(){ if(!ready) return; clearTimeout(saveT); saveT=setTimeout(persist,400); }
   function applyData(d){ if(d&&Array.isArray(d.recipes)&&d.recipes.length){ recipes=d.recipes; migrate(); } if(d&&d.water){ ["ambient","ddt","ff"].forEach(function(k){ if(d.water[k]!==undefined && $(k)) $(k).value=d.water[k]; }); } if(d&&d.seedHyd!==undefined && $("seedHyd")) $("seedHyd").value=d.seedHyd; if(d&&d.mmHyd!==undefined && $("mmHyd")) $("mmHyd").value=d.mmHyd; if(d&&d.a2open!==undefined) a2open=!!d.a2open; }
-  function loadState(){ if(storageOK){ try{ var raw=localStorage.getItem(KEY); if(raw){ var d=JSON.parse(raw); var stale=(d&&d.v!==undefined&&d.v<MASTER_VERSION); if(d){ if(!stale&&Array.isArray(d.recipes)&&d.recipes.length){ recipes=d.recipes; } if(d.water){ ["ambient","ddt","ff"].forEach(function(k){ if(d.water[k]!==undefined&&$(k)) $(k).value=d.water[k]; }); } if(d.seedHyd!==undefined&&$("seedHyd")) $("seedHyd").value=d.seedHyd; if(d.mmHyd!==undefined&&$("mmHyd")) $("mmHyd").value=d.mmHyd; if(d.a2open!==undefined) a2open=!!d.a2open; } } }catch(e){} } for(var i=0;i<recipes.length;i++){ var vs=recipes[i].vars||[]; for(var j=0;j<vs.length;j++){ vs[j].q=0; vs[j].q2=0; } } loadProd(); }
+  function loadState(){ if(storageOK){ try{ var raw=localStorage.getItem(KEY); if(raw){ var d=JSON.parse(raw); var stale=(d&&((typeof d.v==="number"?d.v:1)<MASTER_VERSION)); if(d){ if(!stale&&Array.isArray(d.recipes)&&d.recipes.length){ recipes=d.recipes; } if(d.water){ ["ambient","ddt","ff"].forEach(function(k){ if(d.water[k]!==undefined&&$(k)) $(k).value=d.water[k]; }); } if(d.seedHyd!==undefined&&$("seedHyd")) $("seedHyd").value=d.seedHyd; if(d.mmHyd!==undefined&&$("mmHyd")) $("mmHyd").value=d.mmHyd; if(d.a2open!==undefined) a2open=!!d.a2open; } } }catch(e){} } for(var i=0;i<recipes.length;i++){ var vs=recipes[i].vars||[]; for(var j=0;j<vs.length;j++){ vs[j].q=0; vs[j].q2=0; } } loadProd(); }
 
   function ingRows(r,arr,sec){
     return arr.map(function(x,i){
