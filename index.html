@@ -26,6 +26,8 @@
   .intro{color:var(--muted);font-size:14px;margin-bottom:18px;max-width:600px}
   .savebar{font-size:12px;color:var(--muted);margin:-4px 0 20px;font-family:var(--mono)}
   .savebar #saveState{transition:color .2s}
+  .prodbtn{font-family:var(--mono);font-size:12px;color:var(--teal);background:none;border:none;border-bottom:1px dashed var(--teal);padding:0 0 1px;cursor:pointer}
+  .prodbtn:hover{color:var(--teal-deep)}
   .grid.planner{display:grid;grid-template-columns:1.25fr 1fr;gap:20px;align-items:start}
   @media(max-width:760px){.grid.planner{grid-template-columns:1fr}}
   .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 1px 3px rgba(42,39,34,.04);margin-bottom:20px}
@@ -285,7 +287,7 @@
   </div>
 
   <p class="intro">Cargá cuántas hogazas de cada variedad y obtené, por masa, qué pesar, la masa total, las semillas y cómo dividirla al final del amasado. Más la temperatura del agua según el día.</p>
-  <div class="savebar"><span id="saveState">Guardado automático en este navegador</span></div>
+  <div class="savebar"><span id="saveState">Recetas guardadas en este navegador</span> &middot; <button type="button" id="clearProd" class="prodbtn">Empezar turno (producción a cero)</button></div>
 
   <div class="grid planner">
     <div>
@@ -381,13 +383,19 @@
   var a2open=false; // sección "2° amasado" desplegada
 
   var KEY="fika_masas_v2", saveT, flashT, ready=false;
+  var MASTER_VERSION=1;            // subir este número al publicar una corrección de recetas: las copias viejas de cada celular se actualizan al refrescar
+  var PRODKEY=KEY+"_prod";         // producción del día: se guarda aparte (con fecha) y arranca en cero cada día
   var storageOK=(function(){try{localStorage.setItem("__fk","1");localStorage.removeItem("__fk");return true;}catch(e){return false;}})();
-  function flashSaved(){var el=$("saveState"); if(!el)return; el.textContent="Guardado \u2713"; el.style.color="var(--good)"; clearTimeout(flashT); flashT=setTimeout(function(){el.textContent="Guardado automático en este navegador"; el.style.color="";},1200);}
-  function snapshot(){ return {recipes:recipes, water:{ambient:$("ambient").value, ddt:$("ddt").value, ff:$("ff").value}, seedHyd:$("seedHyd").value, mmHyd:$("mmHyd").value, a2open:a2open}; }
-  function persist(){ if(!storageOK) return; try{ localStorage.setItem(KEY, JSON.stringify(snapshot())); flashSaved(); }catch(e){} }
+  function flashSaved(){var el=$("saveState"); if(!el)return; el.textContent="Guardado \u2713"; el.style.color="var(--good)"; clearTimeout(flashT); flashT=setTimeout(function(){el.textContent="Recetas guardadas en este navegador"; el.style.color="";},1200);}
+  function snapshot(){ var rc; try{rc=JSON.parse(JSON.stringify(recipes));}catch(e){rc=recipes;} for(var i=0;i<rc.length;i++){ var vs=rc[i].vars||[]; for(var j=0;j<vs.length;j++){ vs[j].q=0; vs[j].q2=0; } } return {v:MASTER_VERSION, recipes:rc, water:{ambient:$("ambient").value, ddt:$("ddt").value, ff:$("ff").value}, seedHyd:$("seedHyd").value, mmHyd:$("mmHyd").value, a2open:a2open}; }
+  function persist(){ if(!storageOK) return; try{ localStorage.setItem(KEY, JSON.stringify(snapshot())); }catch(e){} persistProd(); flashSaved(); }
+  function todayStr(){ var d=new Date(); return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); }
+  function persistProd(){ if(!storageOK) return; try{ var prod={}; for(var i=0;i<recipes.length;i++){ var r=recipes[i], arr=[], vs=r.vars||[]; for(var j=0;j<vs.length;j++){ arr.push([vs[j].q||0, vs[j].q2||0]); } prod[r.key]=arr; } localStorage.setItem(PRODKEY, JSON.stringify({date:todayStr(), prod:prod})); }catch(e){} }
+  function loadProd(){ if(!storageOK) return; try{ var raw=localStorage.getItem(PRODKEY); if(!raw) return; var d=JSON.parse(raw); if(!d||d.date!==todayStr()){ try{localStorage.removeItem(PRODKEY);}catch(e2){} return; } var prod=d.prod||{}; for(var i=0;i<recipes.length;i++){ var r=recipes[i], arr=prod[r.key]; if(!arr) continue; var vs=r.vars||[]; for(var j=0;j<vs.length;j++){ if(arr[j]){ vs[j].q=arr[j][0]||0; vs[j].q2=arr[j][1]||0; } } } }catch(e){} }
+  function clearProduction(){ for(var i=0;i<recipes.length;i++){ var vs=recipes[i].vars||[]; for(var j=0;j<vs.length;j++){ vs[j].q=0; vs[j].q2=0; } } if(storageOK){ try{ localStorage.removeItem(PRODKEY); }catch(e){} } rebuild(); }
   function scheduleSave(){ if(!ready) return; clearTimeout(saveT); saveT=setTimeout(persist,400); }
   function applyData(d){ if(d&&Array.isArray(d.recipes)&&d.recipes.length){ recipes=d.recipes; migrate(); } if(d&&d.water){ ["ambient","ddt","ff"].forEach(function(k){ if(d.water[k]!==undefined && $(k)) $(k).value=d.water[k]; }); } if(d&&d.seedHyd!==undefined && $("seedHyd")) $("seedHyd").value=d.seedHyd; if(d&&d.mmHyd!==undefined && $("mmHyd")) $("mmHyd").value=d.mmHyd; if(d&&d.a2open!==undefined) a2open=!!d.a2open; }
-  function loadState(){ if(!storageOK) return; try{ var raw=localStorage.getItem(KEY); if(!raw) return; applyData(JSON.parse(raw)); }catch(e){} }
+  function loadState(){ if(storageOK){ try{ var raw=localStorage.getItem(KEY); if(raw){ var d=JSON.parse(raw); var stale=(d&&d.v!==undefined&&d.v<MASTER_VERSION); if(d){ if(!stale&&Array.isArray(d.recipes)&&d.recipes.length){ recipes=d.recipes; } if(d.water){ ["ambient","ddt","ff"].forEach(function(k){ if(d.water[k]!==undefined&&$(k)) $(k).value=d.water[k]; }); } if(d.seedHyd!==undefined&&$("seedHyd")) $("seedHyd").value=d.seedHyd; if(d.mmHyd!==undefined&&$("mmHyd")) $("mmHyd").value=d.mmHyd; if(d.a2open!==undefined) a2open=!!d.a2open; } } }catch(e){} } for(var i=0;i<recipes.length;i++){ var vs=recipes[i].vars||[]; for(var j=0;j<vs.length;j++){ vs[j].q=0; vs[j].q2=0; } } loadProd(); }
 
   function ingRows(r,arr,sec){
     return arr.map(function(x,i){
@@ -774,9 +782,10 @@
     if(!confirm("¿Restaurar valores de fábrica?\n\nSe van a borrar TODAS tus masas, variedades y cantidades guardadas en este navegador. Si querés conservarlas, primero usá \"Exportar datos\".")) return;
     if(!confirm("Última confirmación: esta acción NO se puede deshacer.\n\n¿Borrar todo y volver a los valores de fábrica?")) return;
     ready=false; clearTimeout(saveT); // evitar que el guardado-al-cerrar reescriba lo borrado al recargar
-    if(storageOK){try{localStorage.removeItem(KEY);}catch(e){}}
+    if(storageOK){try{localStorage.removeItem(KEY);localStorage.removeItem(PRODKEY);}catch(e){}}
     location.reload();
   });
+  (function(){ var cp=$("clearProd"); if(cp) cp.addEventListener("click",function(){ if(confirm("¿Poner la producción del día en cero?\n\nNo toca las recetas ni los gramajes.")) clearProduction(); }); })();
   if(!storageOK){ var ss=$("saveState"); if(ss) ss.textContent="El guardado funciona en la página publicada"; }
 
   try{
