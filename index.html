@@ -274,6 +274,38 @@
     #printArea{display:block !important}
     @page{margin:12mm}
   }
+
+  /* Modo Producción / Recetas */
+  .modebar{display:inline-flex;background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px;margin:0 0 22px}
+  .modebtn{font-family:var(--sans);font-weight:600;font-size:13px;color:var(--muted);background:none;border:none;padding:8px 20px;border-radius:9px;cursor:pointer;transition:background .15s,color .15s}
+  .modebtn:hover{color:var(--teal)}
+  .modebtn.on{background:var(--teal);color:var(--cream)}
+  .recipes-intro{color:var(--muted);font-size:13px;margin:-4px 0 16px;max-width:600px}
+  .edit-block .edit-count{color:var(--muted);font-weight:500}
+  .edit-body{margin-top:14px}
+  .cathead{display:grid;grid-template-columns:minmax(0,1fr) 74px 84px 22px;gap:7px;font-family:var(--mono);font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;padding:0 2px}
+  .cathead span:nth-child(n+2){text-align:right}
+  .catrow{display:grid;grid-template-columns:minmax(0,1fr) 74px 84px 22px;gap:7px;align-items:center;margin-bottom:7px}
+  .catrow input{background:var(--surface2);border:1px solid var(--line);color:var(--text);padding:7px 8px;border-radius:8px;font-size:13px;font-family:var(--sans);outline:none;width:100%;min-width:0}
+  .catrow input[type=number]{font-family:var(--mono);text-align:right;padding:7px 5px}
+  .catrow input:focus{border-color:var(--teal)}
+  .catrow .del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0}
+  .catrow .del:hover{color:var(--danger)}
+  .catrow .vl{display:none}
+  @media(max-width:560px){
+    .modebar{display:flex;width:100%}
+    .modebtn{flex:1;padding:9px 0}
+    .cathead{display:none}
+    .catrow{position:relative;grid-template-columns:1fr 1fr;grid-template-areas:"name name" "lw ls" "w s";gap:4px 8px;padding:13px;background:var(--surface2);border:1px solid var(--line);border-radius:13px;margin-bottom:11px}
+    .catrow input[data-f="name"]{grid-area:name;text-align:left;font-size:16px;font-weight:600;background:transparent;border:none;padding:0 26px 6px 0}
+    .catrow input[data-f="name"]:focus{border:none}
+    .catrow .del{position:absolute;top:12px;right:11px;font-size:22px}
+    .catrow .vl{display:block;font-family:var(--mono);font-size:8px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);text-align:center}
+    .catrow .vl-cw{grid-area:lw}.catrow .vl-cs{grid-area:ls}
+    .catrow input[data-f="w"]{grid-area:w}
+    .catrow input[data-f="s"]{grid-area:s}
+    .catrow input[data-f="w"],.catrow input[data-f="s"]{text-align:center;font-size:16px;background:var(--surface);padding:9px 4px;width:100%}
+  }
 </style>
 </head>
 <body>
@@ -289,11 +321,16 @@
   <p class="intro">Cargá cuántas hogazas de cada variedad y obtené, por masa, qué pesar, la masa total, las semillas y cómo dividirla al final del amasado. Más la temperatura del agua según el día.</p>
   <div class="savebar"><span id="saveState">Recetas guardadas en este navegador</span> &middot; <button type="button" id="clearProd" class="prodbtn">Empezar turno (producción a cero)</button></div>
 
+  <div class="modebar">
+    <button type="button" class="modebtn on" data-mode="prod" id="modeProd">Producción</button>
+    <button type="button" class="modebtn" data-mode="recipes" id="modeRecipes">Recetas</button>
+  </div>
+
+  <div id="viewProd">
   <div class="grid planner">
     <div>
       <div class="amasado-label">1° amasado</div>
       <div id="masaBlocks"></div>
-      <button class="addrecipe" id="addRecipe">+ Agregar masa / receta</button>
       <div id="amasado2"></div>
     </div>
     <div>
@@ -310,7 +347,7 @@
       </div>
       <div class="card">
         <h2>Resumen de la tanda</h2>
-        <div class="seedset"><label for="seedHyd">Hidratación de semillas</label><input id="seedHyd" type="number" value="90" min="0" step="5"><span class="pct">%</span></div>
+        <div class="seedset"><label for="seedHyd">Hidratación de semillas</label><input id="seedHyd" type="number" value="80" min="0" step="5"><span class="pct">%</span></div>
         <div class="mmset" id="mmRow" style="display:none">
           <div class="mmhead"><span class="mmt">Masa madre a preparar</span><span class="mmhydwrap">hidratación <input id="mmHyd" type="number" value="47" min="0" step="1"> %</span></div>
           <div class="mmout" id="mmOut"></div>
@@ -323,6 +360,13 @@
         <button class="calcbtn" id="calcBtn">Calculadora de masa madre</button>
       </div>
     </div>
+  </div>
+  </div>
+
+  <div id="viewRecipes" style="display:none">
+    <p class="recipes-intro">Editá tus masas: nombres, variedades, gramajes, semillas, prefermento e ingredientes base. Los cambios se reflejan en la producción del día.</p>
+    <div id="recipeBlocks"></div>
+    <button class="addrecipe" id="addRecipe">+ Agregar masa / receta</button>
   </div>
 
   <div class="footer">
@@ -387,15 +431,15 @@
   var PRODKEY=KEY+"_prod";         // producción del día: se guarda aparte (con fecha) y arranca en cero cada día
   var storageOK=(function(){try{localStorage.setItem("__fk","1");localStorage.removeItem("__fk");return true;}catch(e){return false;}})();
   function flashSaved(){var el=$("saveState"); if(!el)return; el.textContent="Guardado \u2713"; el.style.color="var(--good)"; clearTimeout(flashT); flashT=setTimeout(function(){el.textContent="Recetas guardadas en este navegador"; el.style.color="";},1200);}
-  function snapshot(){ var rc; try{rc=JSON.parse(JSON.stringify(recipes));}catch(e){rc=recipes;} for(var i=0;i<rc.length;i++){ var vs=rc[i].vars||[]; for(var j=0;j<vs.length;j++){ vs[j].q=0; vs[j].q2=0; } } return {v:MASTER_VERSION, recipes:rc, water:{ambient:$("ambient").value, ddt:$("ddt").value, ff:$("ff").value}, seedHyd:$("seedHyd").value, mmHyd:$("mmHyd").value, a2open:a2open}; }
+  function snapshot(){ var rc; try{rc=JSON.parse(JSON.stringify(recipes));}catch(e){rc=recipes;} for(var i=0;i<rc.length;i++){ var vs=rc[i].vars||[]; for(var j=0;j<vs.length;j++){ vs[j].q=0; vs[j].q2=0; } } return {v:MASTER_VERSION, recipes:rc, water:{ambient:$("ambient").value, ddt:$("ddt").value, ff:$("ff").value}, seedHyd:$("seedHyd").value, mmHyd:$("mmHyd").value, a2open:a2open, mode:mode}; }
   function persist(){ if(!storageOK) return; try{ localStorage.setItem(KEY, JSON.stringify(snapshot())); }catch(e){} persistProd(); flashSaved(); }
   function todayStr(){ var d=new Date(); return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); }
   function persistProd(){ if(!storageOK) return; try{ var prod={}; for(var i=0;i<recipes.length;i++){ var r=recipes[i], arr=[], vs=r.vars||[]; for(var j=0;j<vs.length;j++){ arr.push([vs[j].q||0, vs[j].q2||0]); } prod[r.key]=arr; } localStorage.setItem(PRODKEY, JSON.stringify({date:todayStr(), prod:prod})); }catch(e){} }
   function loadProd(){ if(!storageOK) return; try{ var raw=localStorage.getItem(PRODKEY); if(!raw) return; var d=JSON.parse(raw); if(!d||d.date!==todayStr()){ try{localStorage.removeItem(PRODKEY);}catch(e2){} return; } var prod=d.prod||{}; for(var i=0;i<recipes.length;i++){ var r=recipes[i], arr=prod[r.key]; if(!arr) continue; var vs=r.vars||[]; for(var j=0;j<vs.length;j++){ if(arr[j]){ vs[j].q=arr[j][0]||0; vs[j].q2=arr[j][1]||0; } } } }catch(e){} }
   function clearProduction(){ for(var i=0;i<recipes.length;i++){ var vs=recipes[i].vars||[]; for(var j=0;j<vs.length;j++){ vs[j].q=0; vs[j].q2=0; } } if(storageOK){ try{ localStorage.removeItem(PRODKEY); }catch(e){} } rebuild(); }
   function scheduleSave(){ if(!ready) return; clearTimeout(saveT); saveT=setTimeout(persist,400); }
-  function applyData(d){ if(d&&Array.isArray(d.recipes)&&d.recipes.length){ recipes=d.recipes; migrate(); } if(d&&d.water){ ["ambient","ddt","ff"].forEach(function(k){ if(d.water[k]!==undefined && $(k)) $(k).value=d.water[k]; }); } if(d&&d.seedHyd!==undefined && $("seedHyd")) $("seedHyd").value=d.seedHyd; if(d&&d.mmHyd!==undefined && $("mmHyd")) $("mmHyd").value=d.mmHyd; if(d&&d.a2open!==undefined) a2open=!!d.a2open; }
-  function loadState(){ if(storageOK){ try{ var raw=localStorage.getItem(KEY); if(raw){ var d=JSON.parse(raw); var stale=(d&&((typeof d.v==="number"?d.v:1)<MASTER_VERSION)); if(d){ if(!stale&&Array.isArray(d.recipes)&&d.recipes.length){ recipes=d.recipes; } if(d.water){ ["ambient","ddt","ff"].forEach(function(k){ if(d.water[k]!==undefined&&$(k)) $(k).value=d.water[k]; }); } if(d.seedHyd!==undefined&&$("seedHyd")) $("seedHyd").value=d.seedHyd; if(d.mmHyd!==undefined&&$("mmHyd")) $("mmHyd").value=d.mmHyd; if(d.a2open!==undefined) a2open=!!d.a2open; } } }catch(e){} } for(var i=0;i<recipes.length;i++){ var vs=recipes[i].vars||[]; for(var j=0;j<vs.length;j++){ vs[j].q=0; vs[j].q2=0; } } loadProd(); }
+  function applyData(d){ if(d&&Array.isArray(d.recipes)&&d.recipes.length){ recipes=d.recipes; migrate(); } if(d&&d.water){ ["ambient","ddt","ff"].forEach(function(k){ if(d.water[k]!==undefined && $(k)) $(k).value=d.water[k]; }); } if(d&&d.seedHyd!==undefined && $("seedHyd")) $("seedHyd").value=d.seedHyd; if(d&&d.mmHyd!==undefined && $("mmHyd")) $("mmHyd").value=d.mmHyd; if(d&&d.a2open!==undefined) a2open=!!d.a2open; if(d&&(d.mode==="prod"||d.mode==="recipes")) mode=d.mode; }
+  function loadState(){ if(storageOK){ try{ var raw=localStorage.getItem(KEY); if(raw){ var d=JSON.parse(raw); var stale=(d&&((typeof d.v==="number"?d.v:1)<MASTER_VERSION)); if(d){ if(!stale&&Array.isArray(d.recipes)&&d.recipes.length){ recipes=d.recipes; } if(d.water){ ["ambient","ddt","ff"].forEach(function(k){ if(d.water[k]!==undefined&&$(k)) $(k).value=d.water[k]; }); } if(d.seedHyd!==undefined&&$("seedHyd")) $("seedHyd").value=d.seedHyd; if(d.mmHyd!==undefined&&$("mmHyd")) $("mmHyd").value=d.mmHyd; if(d.a2open!==undefined) a2open=!!d.a2open; if(d.mode==="prod"||d.mode==="recipes") mode=d.mode; } } }catch(e){} } for(var i=0;i<recipes.length;i++){ var vs=recipes[i].vars||[]; for(var j=0;j<vs.length;j++){ vs[j].q=0; vs[j].q2=0; } } loadProd(); }
 
   function ingRows(r,arr,sec){
     return arr.map(function(x,i){
@@ -405,23 +449,8 @@
         '<button class="del" data-deling="'+r.key+'" data-sec="'+sec+'" data-i="'+i+'">&times;</button></div>';
     }).join("");
   }
-  function blockHtml(r){
-    // catálogo completo (detrás del lápiz): editar nombre, gramos, semillas, alta/baja de variedades
-    var catVars=r.vars.map(function(v,i){
-      return '<div class="vrow">'+
-        '<input type="text" value="'+escA(v.name)+'" data-r="'+r.key+'" data-var="'+i+'" data-f="name">'+
-        '<span class="vl vl-w">g c/u</span>'+
-        '<input type="number" min="1" step="10" value="'+v.w+'" data-r="'+r.key+'" data-var="'+i+'" data-f="w">'+
-        '<span class="vl vl-s">Sem. seco g/u</span>'+
-        '<input type="number" min="0" step="1" value="'+(v.s||0)+'" data-r="'+r.key+'" data-var="'+i+'" data-f="s">'+
-        '<span class="vl vl-q">Cantidad a producir</span>'+
-        '<input type="number" min="0" step="1" value="'+(v.q>0?v.q:"")+'" placeholder="—" data-r="'+r.key+'" data-var="'+i+'" data-f="q">'+
-        '<span class="vl vl-m">Masa</span>'+
-        '<div class="masa" id="cmasa-'+r.key+'-'+i+'">0 g</div>'+
-        '<button class="del" data-delvar="'+r.key+'" data-i="'+i+'">&times;</button></div>';
-    }).join("");
-
-    // vista del día: solo variedades activas (cantidad > 0) o agregadas manualmente a la tanda
+  function dayBlockHtml(r){
+    // vista del día (modo Producción): solo variedades activas (cantidad > 0) o agregadas manualmente a la tanda
     var dayRows="", inactiveOpts="";
     r.vars.forEach(function(v,i){
       if((v.q||0)>0 || forceShown[r.key+":"+i]){
@@ -438,17 +467,6 @@
     var selector = inactiveOpts ? '<select class="dayadd" data-dayadd="'+r.key+'"><option value="">+ agregar variedad a la tanda</option>'+inactiveOpts+'</select>' : '';
     var dayBody = (dayRows||'<div class="empty">Ninguna variedad cargada para hoy.</div>')+selector;
 
-    var preEditor;
-    if(r.pre){
-      preEditor='<div class="presect"><div class="sectlabel">Prefermento</div>'+
-        '<input class="prelabel-input" value="'+escA(r.pre.label)+'" data-r="'+r.key+'" data-f="prelabel">'+
-        ingRows(r,r.pre.ings,"pre")+
-        '<button class="addv" data-adding="'+r.key+'" data-sec="pre">+ ingrediente del prefermento</button>'+
-        '<button class="delrecipe" data-delpre="'+r.key+'">Quitar prefermento</button></div>';
-    } else {
-      preEditor='<button class="addv" data-addpre="'+r.key+'">+ agregar prefermento</button>';
-    }
-
     return '<div class="masa-block'+(r.dayOpen?' open':'')+'">'+
       '<div class="masa-head" data-day="'+r.key+'">'+
         '<div class="masa-title"><span class="chev">'+(r.dayOpen?'▾':'▸')+'</span><span class="masa-name">'+esc(r.label)+'</span></div>'+
@@ -460,17 +478,49 @@
           dayBody+
           '<div class="cobrow"><span class="coblabel">Cobertura <small>masa de más, por las dudas</small></span><span class="cobfield"><input type="number" min="0" step="50" value="'+(+r.cob||0)+'" data-r="'+r.key+'" data-f="cob" class="cobin"> g</span></div>'+
           '<div class="weigh" id="weigh-'+r.key+'"></div>'+
-          '<button class="editcat'+(r.open?' on':'')+'" data-toggle="'+r.key+'">'+(r.open?'✕ Cerrar edición':'✎ Editar variedades y receta')+'</button>'+
-          '<div class="receta'+(r.open?'':' hidden')+'">'+
-            '<label class="catlabel">Nombre de la masa</label>'+
-            '<input class="masa-name-input" value="'+escA(r.label)+'" data-r="'+r.key+'" data-f="label">'+
-            '<div class="sectlabel">Variedades · catálogo</div>'+
-            '<div class="vhead"><span>Variedad</span><span>g c/u</span><span>Sem. seco</span><span>Cant.</span><span>Masa</span><span></span></div>'+catVars+
-            '<button class="addv" data-addvar="'+r.key+'">+ variedad</button>'+
-            preEditor+
-            '<div class="sectlabel">Receta · gramos base</div>'+ingRows(r,r.ings,"main")+
-            '<button class="addv" data-adding="'+r.key+'" data-sec="main">+ ingrediente</button>'+
-            '<button class="delrecipe" data-delr="'+r.key+'">Borrar esta masa</button></div>'+
+        '</div>'
+      : '')+
+      '</div>';
+  }
+  function editBlockHtml(r){
+    // modo Recetas: catálogo de variedades (nombre, gramaje, semillas), prefermento, receta base
+    var catVars=r.vars.map(function(v,i){
+      return '<div class="catrow">'+
+        '<input type="text" value="'+escA(v.name)+'" data-r="'+r.key+'" data-var="'+i+'" data-f="name" placeholder="Variedad">'+
+        '<span class="vl vl-cw">g c/u</span>'+
+        '<input type="number" min="1" step="10" value="'+v.w+'" data-r="'+r.key+'" data-var="'+i+'" data-f="w">'+
+        '<span class="vl vl-cs">Sem. seco g/u</span>'+
+        '<input type="number" min="0" step="1" value="'+(v.s||0)+'" data-r="'+r.key+'" data-var="'+i+'" data-f="s">'+
+        '<button class="del" data-delvar="'+r.key+'" data-i="'+i+'">&times;</button></div>';
+    }).join("");
+
+    var preEditor;
+    if(r.pre){
+      preEditor='<div class="presect"><div class="sectlabel">Prefermento</div>'+
+        '<input class="prelabel-input" value="'+escA(r.pre.label)+'" data-r="'+r.key+'" data-f="prelabel">'+
+        ingRows(r,r.pre.ings,"pre")+
+        '<button class="addv" data-adding="'+r.key+'" data-sec="pre">+ ingrediente del prefermento</button>'+
+        '<button class="delrecipe" data-delpre="'+r.key+'">Quitar prefermento</button></div>';
+    } else {
+      preEditor='<button class="addv" data-addpre="'+r.key+'">+ agregar prefermento</button>';
+    }
+
+    var n=r.vars.length;
+    return '<div class="masa-block edit-block'+(r.open?' open':'')+'">'+
+      '<div class="masa-head" data-edit="'+r.key+'">'+
+        '<div class="masa-title"><span class="chev">'+(r.open?'▾':'▸')+'</span><span class="masa-name">'+esc(r.label)+'</span></div>'+
+        '<div class="head-right"><span class="masa-sum edit-count">'+n+' '+(n===1?'variedad':'variedades')+'</span></div></div>'+
+      (r.open ?
+        '<div class="edit-body">'+
+          '<label class="catlabel">Nombre de la masa</label>'+
+          '<input class="masa-name-input" value="'+escA(r.label)+'" data-r="'+r.key+'" data-f="label">'+
+          '<div class="sectlabel">Variedades · catálogo</div>'+
+          '<div class="cathead"><span>Variedad</span><span>g c/u</span><span>Sem. seco</span><span></span></div>'+catVars+
+          '<button class="addv" data-addvar="'+r.key+'">+ variedad</button>'+
+          preEditor+
+          '<div class="sectlabel">Receta · gramos base</div>'+ingRows(r,r.ings,"main")+
+          '<button class="addv" data-adding="'+r.key+'" data-sec="main">+ ingrediente</button>'+
+          '<button class="delrecipe" data-delr="'+r.key+'">Borrar esta masa</button>'+
         '</div>'
       : '')+
       '</div>';
@@ -540,7 +590,16 @@
     }
     return D;
   }
-  function rebuild(){ $("masaBlocks").innerHTML=recipes.map(blockHtml).join(""); render2(); recompute(); }
+  function rebuild(){ $("masaBlocks").innerHTML=recipes.map(dayBlockHtml).join(""); var rb=$("recipeBlocks"); if(rb) rb.innerHTML=recipes.map(editBlockHtml).join(""); render2(); recompute(); }
+  var mode="prod"; // "prod" | "recipes"
+  function applyView(){
+    var p=$("viewProd"), rc=$("viewRecipes"), mp=$("modeProd"), mr=$("modeRecipes");
+    var isRec=(mode==="recipes");
+    if(p) p.style.display=isRec?"none":"";
+    if(rc) rc.style.display=isRec?"":"none";
+    if(mp) mp.className="modebtn"+(isRec?"":" on");
+    if(mr) mr.className="modebtn"+(isRec?" on":"");
+  }
 
   function masaMadreTotal(){
     var total=0;
@@ -649,7 +708,7 @@
       if(b.dataset.rema2!==undefined){ r=find(b.dataset.rema2); if(r) r.a2=false; rebuild(); return; }
       if(b.dataset.toggle!==undefined){ r=find(b.dataset.toggle); r.open=!r.open; rebuild(); return; }
       if(b.dataset.delday!==undefined){ r=find(b.dataset.delday); var n2=(b.dataset.am==="2"); var dv=r.vars[+b.dataset.i]; if(dv){ dv[n2?"q2":"q"]=0; } var fmd=n2?forceShown2:forceShown; delete fmd[b.dataset.delday+":"+b.dataset.i]; rebuild(); return; }
-      if(b.dataset.addvar!==undefined){ r=find(b.dataset.addvar); var nv={name:"Nueva variedad",w:800,q:0,s:0,q2:0}; r.vars.push(nv); forceShown[b.dataset.addvar+":"+(r.vars.length-1)]=true; rebuild(); return; }
+      if(b.dataset.addvar!==undefined){ r=find(b.dataset.addvar); r.vars.push({name:"Nueva variedad",w:800,q:0,s:0,q2:0}); rebuild(); return; }
       if(b.dataset.delvar!==undefined){ find(b.dataset.delvar).vars.splice(+b.dataset.i,1); forceShown={}; forceShown2={}; rebuild(); return; }
       if(b.dataset.adding!==undefined){ r=find(b.dataset.adding); (b.dataset.sec==="pre"&&r.pre?r.pre.ings:r.ings).push({name:"",grams:0}); rebuild(); return; }
       if(b.dataset.deling!==undefined){ r=find(b.dataset.deling); (b.dataset.sec==="pre"&&r.pre?r.pre.ings:r.ings).splice(+b.dataset.i,1); rebuild(); return; }
@@ -662,6 +721,7 @@
     if(head){
       if(head.dataset.day!==undefined){ var r1=find(head.dataset.day); if(r1){ r1.dayOpen=!r1.dayOpen; rebuild(); } return; }
       if(head.dataset.day2!==undefined){ var r2=find(head.dataset.day2); if(r2){ r2.dayOpen2=!r2.dayOpen2; rebuild(); } return; }
+      if(head.dataset.edit!==undefined){ var re=find(head.dataset.edit); if(re){ re.open=!re.open; rebuild(); } return; }
       return;
     }
     if(e.target.closest(".a2-head")){ a2open=!a2open; rebuild(); return; }
@@ -676,8 +736,12 @@
       return;
     }
   }
-  var blocks=$("masaBlocks"), blocks2=$("amasado2");
-  [blocks, blocks2].forEach(function(el){ if(el){ el.addEventListener("input",onInput); el.addEventListener("click",onClick); el.addEventListener("change",onChange); } });
+  var blocks=$("masaBlocks"), blocks2=$("amasado2"), blocksR=$("recipeBlocks");
+  [blocks, blocks2, blocksR].forEach(function(el){ if(el){ el.addEventListener("input",onInput); el.addEventListener("click",onClick); el.addEventListener("change",onChange); } });
+  (function(){ var mp=$("modeProd"), mr=$("modeRecipes");
+    if(mp) mp.addEventListener("click",function(){ mode="prod"; applyView(); scheduleSave(); });
+    if(mr) mr.addEventListener("click",function(){ mode="recipes"; applyView(); scheduleSave(); });
+  })();
   $("addRecipe").addEventListener("click",function(){
     recipes.push({key:"r"+Date.now(), label:"Nueva masa", open:true, dayOpen:true, pre:null,
       ings:[{name:"Harina 000",grams:1000},{name:"Agua",grams:650},{name:"Sal",grams:20}],
@@ -774,7 +838,7 @@
   $("importBtn").addEventListener("click",function(){ showIO("","Pegá acá los datos y tocá Aplicar."); try{$("ioText").focus();}catch(e){} });
   $("ioApply").addEventListener("click",function(){
     try{ var d=JSON.parse($("ioText").value); if(!d||!Array.isArray(d.recipes)) throw 0;
-      applyData(d); persist(); rebuild(); waterCalc(); $("ioMsg").textContent="Datos importados \u2713";
+      applyData(d); persist(); rebuild(); applyView(); waterCalc(); $("ioMsg").textContent="Datos importados \u2713";
     }catch(e){ $("ioMsg").style.color="var(--danger)"; $("ioMsg").textContent="No pude leer esos datos. Revisá que esté completo."; }
   });
   $("ioClose").addEventListener("click",function(){ $("ioPanel").style.display="none"; });
@@ -792,6 +856,7 @@
     loadState();
     migrate();
     rebuild();
+    applyView();
     waterCalc();
     ready=true;
   }catch(err){
