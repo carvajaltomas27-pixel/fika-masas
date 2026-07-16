@@ -401,10 +401,10 @@
 (function(){
   var recipes = [
     {key:"semi", label:"Semi-integral", open:false, pre:null,
-      ings:[{name:"Masa madre",grams:109},{name:"Harina 000",grams:256},{name:"Harina integral",grams:256},{name:"Agua",grams:374},{name:"Sal",grams:10}],
-      vars:[{name:"Hogaza de Campo",w:840,q:0,s:0},{name:"Pan semillas",w:735,q:0,s:60},{name:"Tostada semi-integral",w:2000,q:0,s:0},{name:"Barra de semillas",w:1800,q:0,s:105}]},
+      ings:[{name:"Masa madre",grams:109},{name:"Harina 000",grams:256},{name:"Harina integral",grams:256},{name:"Agua",grams:353},{name:"Sal",grams:10}],
+      vars:[{name:"Hogaza de Campo",w:840,q:0,s:0},{name:"Pan semillas",w:735,q:0,s:60},{name:"Tostada semi-integral",w:2000,q:0,s:0},{name:"Barra de semillas",w:1800,q:0,s:105},{name:"Barra de kg",w:1000,q:0,s:0}]},
     {key:"integral", label:"100% integral", open:false, pre:null,
-      ings:[{name:"Masa madre",grams:100},{name:"Harina integral",grams:503},{name:"Agua",grams:387},{name:"Sal",grams:10}],
+      ings:[{name:"Masa madre",grams:100},{name:"Harina integral",grams:503},{name:"Agua",grams:367},{name:"Sal",grams:10}],
       vars:[{name:"Hogaza Común",w:840,q:0,s:0}]},
     {key:"blanco", label:"Blanco", open:false, pre:null,
       ings:[{name:"Masa madre",grams:107},{name:"Harina 000",grams:535},{name:"Agua",grams:348},{name:"Sal",grams:11}],
@@ -427,7 +427,7 @@
   var a2open=false; // sección "2° amasado" desplegada
 
   var KEY="fika_masas_v2", saveT, flashT, ready=false;
-  var MASTER_VERSION=2;            // subir este número al publicar una corrección de recetas: las copias viejas de cada celular se actualizan al refrescar  (v2: pan de semillas 735 g masa + 60 g semillas)
+  var MASTER_VERSION=3;            // subir este número al publicar una corrección de recetas: las copias viejas de cada celular se actualizan al refrescar  (v3: semi 69% hidr. + integral 73% hidr. + Barra de kg 1000 g)
   var SETTINGS_VERSION=1;          // subir para forzar una corrección de AJUSTES compartidos (ej. hidratación de semillas) en TODOS los equipos, sin tocar las recetas  (v1: semillas 80%)
   var PRODKEY=KEY+"_prod";         // producción del día: se guarda aparte (con fecha) y arranca en cero cada día
   var storageOK=(function(){try{localStorage.setItem("__fk","1");localStorage.removeItem("__fk");return true;}catch(e){return false;}})();
